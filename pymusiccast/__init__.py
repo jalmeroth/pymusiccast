@@ -34,7 +34,7 @@ def messageWorker(device):
 
             data = {}
             try:
-                data = json.loads(message)
+                data = json.loads(message.decode("utf-8"))
             except ValueError:
                 _LOGGER.error("Received invalid message: {}".format(message))
 
