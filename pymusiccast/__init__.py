@@ -11,6 +11,8 @@ from homeassistant.const import (
 )
 _LOGGER = logging.getLogger(__name__)
 
+__version__ = '0.0.5'
+
 ENDPOINTS = {
     "getDeviceInfo": "http://{}/YamahaExtendedControl/v1/system/getDeviceInfo",
     "getFeatures": "http://{}/YamahaExtendedControl/v1/system/getFeatures",
