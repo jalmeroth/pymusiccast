@@ -1,5 +1,5 @@
 from setuptools import setup
-from pymusiccast import __version__
+__version__ = '0.0.5'
 
 setup(
     name="pymusiccast",
