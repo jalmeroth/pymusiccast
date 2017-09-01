@@ -12,12 +12,13 @@ from homeassistant.const import (
 _LOGGER = logging.getLogger(__name__)
 
 ENDPOINTS = {
-    "getFeatures": "http://{}/YamahaExtendedControl/v1/system/getFeatures",
-    "getStatus": "http://{}/YamahaExtendedControl/v1/main/getStatus",
-    "getPlayInfo": "http://{}/YamahaExtendedControl/v1/netusb/getPlayInfo",
     "getDeviceInfo": "http://{}/YamahaExtendedControl/v1/system/getDeviceInfo",
+    "getFeatures": "http://{}/YamahaExtendedControl/v1/system/getFeatures",
+    "getPlayInfo": "http://{}/YamahaExtendedControl/v1/netusb/getPlayInfo",
+    "getStatus": "http://{}/YamahaExtendedControl/v1/main/getStatus",
     "setInput": "http://{}/YamahaExtendedControl/v1/main/setInput",
     "setMute": "http://{}/YamahaExtendedControl/v1/main/setMute",
+    "setPlayback": "http://{}/YamahaExtendedControl/v1/netusb/setPlayback",
     "setPower": "http://{}/YamahaExtendedControl/v1/main/setPower",
     "setVolume": "http://{}/YamahaExtendedControl/v1/main/setVolume",
 }
