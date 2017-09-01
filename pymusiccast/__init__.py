@@ -184,7 +184,7 @@ class mcDevice(object):
                 _LOGGER.debug("Volume: {} / Max: {}".format(message.get('volume'), message.get('max_volume')))
                 volume = message.get('volume') / message.get('max_volume')
                 self._yamaha._volume = volume
-                self._yamaha._volumeMax = message.get('max_volume')
+                self._yamaha._volume_max = message.get('max_volume')
             if 'mute' in message:
                 _LOGGER.debug("Mute: {}".format(message.get('mute')))
                 self._yamaha._mute = message.get('mute', False)
