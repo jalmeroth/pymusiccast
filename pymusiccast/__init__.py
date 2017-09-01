@@ -131,18 +131,18 @@ class mcDevice(object):
         # _LOGGER.debug("message: {}".format(message))
         if self._yamaha:
             if 'power' in message:
-                _LOGGER.info("Power: {}".format(message.get('power')))
+                _LOGGER.debug("Power: {}".format(message.get('power')))
                 self._yamaha._power = STATE_ON if message.get('power') == "on" else STATE_OFF
             if 'input' in message:
-                _LOGGER.info("Input: {}".format(message.get('input')))
+                _LOGGER.debug("Input: {}".format(message.get('input')))
                 self._yamaha._source = message.get('input')
             if 'volume' in message and 'max_volume' in message:
-                _LOGGER.info("Volume: {} / Max: {}".format(message.get('volume'), message.get('max_volume')))
+                _LOGGER.debug("Volume: {} / Max: {}".format(message.get('volume'), message.get('max_volume')))
                 volume = message.get('volume') / message.get('max_volume')
                 self._yamaha._volume = volume
                 self._yamaha._volumeMax = message.get('max_volume')
             if 'mute' in message:
-                _LOGGER.info("Mute: {}".format(message.get('mute')))
+                _LOGGER.debug("Mute: {}".format(message.get('mute')))
                 self._yamaha._mute = message.get('mute', False)
         else:
             _LOGGER.debug("No yamaha-obj found")
