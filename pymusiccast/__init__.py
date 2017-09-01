@@ -58,6 +58,49 @@ def socketWorker(sock, q):
         time.sleep(0.2)
 
 
+class MediaStatus(object):
+    """docstring for MediaStatus"""
+    def __init__(self, data, host):
+        super(MediaStatus, self).__init__()
+        self.host = host
+        self.play_time = 0
+        self.total_time = 0
+        self.artist = None
+        self.album = None
+        self.track = None
+        self.albumart_url = None
+        self.initialize(data)
+
+    @property
+    def media_duration(self):
+        return self.total_time
+
+    @property
+    def media_image_url(self):
+        return "http://{}{}".format(self.host, self.albumart_url)
+
+    @property
+    def media_artist(self):
+        return self.artist
+
+    @property
+    def media_album(self):
+        return self.album
+
+    @property
+    def media_track(self):
+        return self.track
+
+    @property
+    def media_title(self):
+        return self.media_track
+
+    def initialize(self, data):
+        for item in data:
+            if hasattr(self, item):
+                setattr(self, item, data[item])
+
+
 class mcDevice(object):
     """docstring for mcDevice"""
     def __init__(self, ipAddress, udp_port=5005, **kwargs):
@@ -155,6 +198,7 @@ class mcDevice(object):
                 playInfo = self.getPlayInfo()
                 # _LOGGER.debug(playInfo)
                 if playInfo:
+                    self._yamaha._media_status = MediaStatus(playInfo, self._ipAddress)
                     playback = playInfo.get('playback')
                     # _LOGGER.debug("Playback: {}".format(playback))
                     if playback == "play":
