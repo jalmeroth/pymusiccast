@@ -248,7 +248,7 @@ class mcDevice(object):
             except Exception as e:
                 _LOGGER.error(e)
             else:
-                _LOGGER.debug(data)
+                _LOGGER.debug(json.dumps(data))
                 return data
 
     def __del__(self):
