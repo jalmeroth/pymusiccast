@@ -230,6 +230,11 @@ class mcDevice(object):
         params = {"input": inputId}
         return self.request(reqUrl, params=params)
 
+    def setPlayback(self, playback):
+        reqUrl = ENDPOINTS["setPlayback"].format(self._ipAddress)
+        params = {"playback": playback}
+        return self.request(reqUrl, params=params)
+
     def request(self, url, *args, **kwargs):
         method = kwargs.get('method', 'GET')
         timeout = kwargs.pop('timeout', 10)                 # hass default timeout
