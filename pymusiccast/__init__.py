@@ -213,7 +213,7 @@ class McDevice(object):
         if self._yamaha:
             if 'power' in message:
                 _LOGGER.debug("Power: %s", message.get('power'))
-                self._yamaha._power = (
+                self._yamaha.power = (
                     STATE_ON if message.get('power') == "on" else STATE_OFF)
             if 'input' in message:
                 _LOGGER.debug("Input: %s", message.get('input'))
@@ -225,11 +225,11 @@ class McDevice(object):
                     message.get('max_volume')
                 )
                 volume = message.get('volume') / message.get('max_volume')
-                self._yamaha._volume = volume
-                self._yamaha._volume_max = message.get('max_volume')
+                self._yamaha.volume = volume
+                self._yamaha.volume_max = message.get('max_volume')
             if 'mute' in message:
                 _LOGGER.debug("Mute: %s", message.get('mute'))
-                self._yamaha._mute = message.get('mute', False)
+                self._yamaha.mute = message.get('mute', False)
         else:
             _LOGGER.debug("No yamaha-obj found")
 
@@ -241,18 +241,18 @@ class McDevice(object):
                 play_info = self.get_play_info()
                 # _LOGGER.debug(play_info)
                 if play_info:
-                    self._yamaha._media_status = MediaStatus(
+                    self._yamaha.media_status = MediaStatus(
                         play_info, self._ipAddress)
                     playback = play_info.get('playback')
                     # _LOGGER.debug("Playback: {}".format(playback))
                     if playback == "play":
-                        self._yamaha._status = STATE_PLAYING
+                        self._yamaha.status = STATE_PLAYING
                     elif playback == "stop":
-                        self._yamaha._status = STATE_IDLE
+                        self._yamaha.status = STATE_IDLE
                     elif playback == "pause":
-                        self._yamaha._status = STATE_PAUSED
+                        self._yamaha.status = STATE_PAUSED
                     else:
-                        self._yamaha._status = STATE_UNKNOWN
+                        self._yamaha.status = STATE_UNKNOWN
 
     def handle_features(self, device_features):
         """Handles features of the device"""
@@ -271,7 +271,7 @@ class McDevice(object):
                                 "source: %s input_list: %s",
                                 self._yamaha._source, input_list
                             )
-                        self._yamaha._source_list = input_list
+                        self._yamaha.source_list = input_list
                     break
 
     def handle_event(self, message):
