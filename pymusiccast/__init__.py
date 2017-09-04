@@ -32,12 +32,12 @@ def request(url, *args, **kwargs):
     timeout = kwargs.pop('timeout', 10)  # hass default timeout
     try:
         r = requests.request(method, url, *args, timeout=timeout, **kwargs)
-    except Exception as e:
+    except requests.exceptions.RequestException as e:
         _LOGGER.error(e)
     else:
         try:
             data = r.json()
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             _LOGGER.error(e)
         else:
             _LOGGER.debug(json.dumps(data))
