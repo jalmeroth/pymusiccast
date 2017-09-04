@@ -254,7 +254,6 @@ class mcDevice(object):
         status = self.getStatus()
         if status:
             _LOGGER.debug("updateStatus: firing again in {} seconds".format(self._interval))
-            # TODO: after sleep timer is not firing any more
             self.updateStatus_timer = threading.Timer(self._interval, self.updateStatus)
             self.updateStatus_timer.setDaemon(True)
             self.updateStatus_timer.start()
