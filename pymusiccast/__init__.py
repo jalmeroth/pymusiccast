@@ -1,10 +1,12 @@
+""""This library brings support for \
+Yamaha MusicCast devices to Home Assistant."""
 import json
 import time
 import queue
 import socket
 import logging
-import requests
 import threading
+import requests
 from homeassistant.const import (
     STATE_ON, STATE_OFF, STATE_UNKNOWN,
     STATE_PLAYING, STATE_PAUSED, STATE_IDLE
@@ -24,37 +26,56 @@ ENDPOINTS = {
 }
 
 
-def messageWorker(device):
+def request(url, *args, **kwargs):
+    """Do the HTTP Request and return data"""
+    method = kwargs.get('method', 'GET')
+    timeout = kwargs.pop('timeout', 10)  # hass default timeout
+    try:
+        req = requests.request(method, url, *args, timeout=timeout, **kwargs)
+    except requests.exceptions.RequestException as error:
+        _LOGGER.error(error)
+    else:
+        try:
+            data = req.json()
+        except requests.exceptions.RequestException as error:
+            _LOGGER.error(error)
+        else:
+            _LOGGER.debug(json.dumps(data))
+            return data
 
-    q = device._messages
+
+def message_worker(device):
+    """Loop through messages and pass them on to right device"""
+    msg_q = device.messages
 
     while True:
 
-        if not q.empty():
-            message = q.get()
+        if not msg_q.empty():
+            message = msg_q.get()
 
             data = {}
             try:
                 data = json.loads(message.decode("utf-8"))
             except ValueError:
-                _LOGGER.error("Received invalid message: {}".format(message))
+                _LOGGER.error("Received invalid message: %s", message)
 
             if 'device_id' in data:
-                deviceId = data.get('device_id')
-                if deviceId == device._deviceId:
-                    device.handleEvent(data)
+                device_id = data.get('device_id')
+                if device_id == device.device_id:
+                    device.handle_event(data)
                 else:
                     _LOGGER.warning("Received message for unknown device.")
-            q.task_done()
+            msg_q.task_done()
 
         time.sleep(0.2)
 
 
-def socketWorker(sock, q):
+def socket_worker(sock, msg_q):
+    """Socket Loop that fills message queue"""
     while True:
         data, addr = sock.recvfrom(1024)    # buffer size is 1024 bytes
-        _LOGGER.debug("received message: {} from {}".format(data, addr))
-        q.put(data)
+        _LOGGER.debug("received message: %s from %s", data, addr)
+        msg_q.put(data)
         time.sleep(0.2)
 
 
@@ -73,227 +94,256 @@ class MediaStatus(object):
 
     @property
     def media_duration(self):
+        """Duration of current playing media in seconds."""
         return self.total_time
 
     @property
     def media_image_url(self):
+        """Image url of current playing media."""
         return "http://{}{}".format(self.host, self.albumart_url)
 
     @property
     def media_artist(self):
+        """Artist of current playing media, music track only."""
         return self.artist
 
     @property
     def media_album(self):
+        """Album of current playing media, music track only."""
         return self.album
 
     @property
     def media_track(self):
+        """Track number of current playing media, music track only."""
         return self.track
 
     @property
     def media_title(self):
+        """Title of current playing media."""
         return self.media_track
 
     def initialize(self, data):
+        """ initialize variable from loaded data """
         for item in data:
             if hasattr(self, item):
                 setattr(self, item, data[item])
 
 
-class mcDevice(object):
-    """docstring for mcDevice"""
+class McDevice(object):
+    """docstring for McDevice"""
     def __init__(self, ipAddress, udp_port=5005, **kwargs):
-        super(mcDevice, self).__init__()
-        _LOGGER.debug("mcDevice: {}".format(ipAddress))
+        super(McDevice, self).__init__()
+        _LOGGER.debug("McDevice: %s", ipAddress)
         # construct message queue
-        self._messages = queue.Queue()
-        self.deviceInfo = None
-        self.deviceFeatures = None
-        self.updateStatus_timer = None
-        self._ipAddress = ipAddress
+        self.messages = queue.Queue()
+        self.device_info = None
+        self.device_features = None
+        self.update_status_timer = None
+        self._ip_address = ipAddress
         self._udp_port = udp_port
         self._interval = kwargs.get('mc_interval', 480)
         self._yamaha = None
         self._socket = None
-        self._deviceId = None
+        self.device_id = None
         self.initialize()
 
     def initialize(self):
+        """initialize the object"""
         self.initialize_socket()
-        self.deviceInfo = self.getDeviceInfo()
-        _LOGGER.debug(self.deviceInfo)
-        self._deviceId = self.deviceInfo.get('device_id') if self.deviceInfo else "Unknown"
+        self.device_info = self.get_device_info()
+        _LOGGER.debug(self.device_info)
+        self.device_id = (
+            self.device_info.get('device_id')
+            if self.device_info else "Unknown")
         self.initialize_worker()
-        # self.updateStatus()
 
     def initialize_socket(self):
+        """initialize the socket"""
         self._socket = socket.socket(
             socket.AF_INET,     # IPv4
             socket.SOCK_DGRAM   # UDP
         )
         try:
             self._socket.bind(('', self._udp_port))
-        except Exception as e:
-            raise e
+        except Exception as error:
+            raise error
         else:
             _LOGGER.debug("Socket open.")
             _LOGGER.debug("Starting Socket Thread.")
             socket_thread = threading.Thread(
-                name="SocketThread", target=socketWorker, args=(self._socket, self._messages,))
+                name="SocketThread", target=socket_worker,
+                args=(self._socket, self.messages,))
             socket_thread.setDaemon(True)
             socket_thread.start()
 
     def initialize_worker(self):
+        """initialize the worker thread"""
         _LOGGER.debug("Starting Worker Thread.")
         worker_thread = threading.Thread(
-            name="WorkerThread", target=messageWorker, args=(self,))
+            name="WorkerThread", target=message_worker, args=(self,))
         worker_thread.setDaemon(True)
         worker_thread.start()
 
-    def getDeviceInfo(self):
-        reqUrl = ENDPOINTS["getDeviceInfo"].format(self._ipAddress)
-        return self.request(reqUrl)
+    def get_device_info(self):
+        """Get info from device"""
+        req_url = ENDPOINTS["getDeviceInfo"].format(self._ip_address)
+        return request(req_url)
 
-    def getFeatures(self):
-        reqUrl = ENDPOINTS["getFeatures"].format(self._ipAddress)
-        return self.request(reqUrl)
+    def get_features(self):
+        """Get features from device"""
+        req_url = ENDPOINTS["getFeatures"].format(self._ip_address)
+        return request(req_url)
 
-    def getStatus(self):
+    def get_status(self):
+        """Get status from device"""
         headers = {
             "X-AppName": "MusicCast/0.1(python)",
             "X-AppPort": str(self._udp_port)
         }
-        reqUrl = ENDPOINTS["getStatus"].format(self._ipAddress)
-        return self.request(reqUrl, headers=headers)
+        req_url = ENDPOINTS["getStatus"].format(self._ip_address)
+        return request(req_url, headers=headers)
 
-    def getPlayInfo(self):
-        reqUrl = ENDPOINTS["getPlayInfo"].format(self._ipAddress)
-        return self.request(reqUrl)
+    def get_play_info(self):
+        """Get play info from device"""
+        req_url = ENDPOINTS["getPlayInfo"].format(self._ip_address)
+        return request(req_url)
 
-    def handleMain(self, message):
+    def handle_main(self, message):
+        """Handles 'main' in message"""
         # _LOGGER.debug("message: {}".format(message))
         if self._yamaha:
             if 'power' in message:
-                _LOGGER.debug("Power: {}".format(message.get('power')))
-                self._yamaha._power = STATE_ON if message.get('power') == "on" else STATE_OFF
+                _LOGGER.debug("Power: %s", message.get('power'))
+                self._yamaha.power = (
+                    STATE_ON if message.get('power') == "on" else STATE_OFF)
             if 'input' in message:
-                _LOGGER.debug("Input: {}".format(message.get('input')))
+                _LOGGER.debug("Input: %s", message.get('input'))
                 self._yamaha._source = message.get('input')
             if 'volume' in message and 'max_volume' in message:
-                _LOGGER.debug("Volume: {} / Max: {}".format(message.get('volume'), message.get('max_volume')))
+                _LOGGER.debug(
+                    "Volume: %d / Max: %d",
+                    message.get('volume'),
+                    message.get('max_volume')
+                )
                 volume = message.get('volume') / message.get('max_volume')
-                self._yamaha._volume = volume
-                self._yamaha._volume_max = message.get('max_volume')
+                self._yamaha.volume = volume
+                self._yamaha.volume_max = message.get('max_volume')
             if 'mute' in message:
-                _LOGGER.debug("Mute: {}".format(message.get('mute')))
-                self._yamaha._mute = message.get('mute', False)
+                _LOGGER.debug("Mute: %s", message.get('mute'))
+                self._yamaha.mute = message.get('mute', False)
         else:
             _LOGGER.debug("No yamaha-obj found")
 
-    def handleNetUSB(self, message):
+    def handle_netusb(self, message):
+        """Handles 'netusb' in message"""
         # _LOGGER.debug("message: {}".format(message))
         if self._yamaha:
             if 'play_info_updated' in message:
-                playInfo = self.getPlayInfo()
-                # _LOGGER.debug(playInfo)
-                if playInfo:
-                    self._yamaha._media_status = MediaStatus(playInfo, self._ipAddress)
-                    playback = playInfo.get('playback')
+                play_info = self.get_play_info()
+                # _LOGGER.debug(play_info)
+                if play_info:
+                    self._yamaha.media_status = MediaStatus(
+                        play_info, self._ip_address)
+                    playback = play_info.get('playback')
                     # _LOGGER.debug("Playback: {}".format(playback))
                     if playback == "play":
-                        self._yamaha._status = STATE_PLAYING
+                        self._yamaha.status = STATE_PLAYING
                     elif playback == "stop":
-                        self._yamaha._status = STATE_IDLE
+                        self._yamaha.status = STATE_IDLE
                     elif playback == "pause":
-                        self._yamaha._status = STATE_PAUSED
+                        self._yamaha.status = STATE_PAUSED
                     else:
-                        self._yamaha._status = STATE_UNKNOWN
+                        self._yamaha.status = STATE_UNKNOWN
 
-    def handleFeatures(self, deviceFeatures):
-        if deviceFeatures and 'zone' in deviceFeatures:
-            for zone in deviceFeatures['zone']:
+    def handle_features(self, device_features):
+        """Handles features of the device"""
+        if device_features and 'zone' in device_features:
+            for zone in device_features['zone']:
                 if zone.get('id') == 'main':
                     input_list = zone.get('input_list', [])
                     if self._yamaha:
-                        self._yamaha._source_list = input_list
+                        # selected source first
+                        if self._yamaha._source:
+                            # remove selected source from index
+                            input_list.remove(self._yamaha._source)
+                            # put selected source at first
+                            input_list = [self._yamaha._source] + input_list
+                            _LOGGER.debug(
+                                "source: %s input_list: %s",
+                                self._yamaha._source, input_list
+                            )
+                        self._yamaha.source_list = input_list
                     break
 
-    def handleEvent(self, message):
+    def handle_event(self, message):
+        """Dispatch all event messages"""
         # _LOGGER.debug(message)
         if 'main' in message:
-            self.handleMain(message['main'])
+            self.handle_main(message['main'])
 
         if 'netusb' in message:
-            self.handleNetUSB(message['netusb'])
+            self.handle_netusb(message['netusb'])
 
         if self._yamaha:                                    # Push updates
             # _LOGGER.debug("Push updates")
             self._yamaha.schedule_update_ha_state()
 
-    def updateStatus(self, push=True):
-        status = self.getStatus()
+    def update_status(self, push=True):
+        """Update device status"""
+        status = self.get_status()
         if status:
-            _LOGGER.debug("updateStatus: firing again in {} seconds".format(self._interval))
-            # TODO: after sleep timer is not firing any more
-            self.updateStatus_timer = threading.Timer(self._interval, self.updateStatus)
-            self.updateStatus_timer.setDaemon(True)
-            self.updateStatus_timer.start()
-            self.handleMain(status)
+            _LOGGER.debug(
+                "update status: firing again in %d seconds", self._interval)
+            self.update_status_timer = threading.Timer(
+                self._interval, self.update_status)
+            self.update_status_timer.setDaemon(True)
+            self.update_status_timer.start()
+            self.handle_main(status)
 
-            if not self.deviceFeatures:                     # get features only once
-                self.deviceFeatures = self.getFeatures()
-                _LOGGER.debug(self.deviceFeatures)
-                self.handleFeatures(self.deviceFeatures)
+            # get features only once
+            if not self.device_features:
+                self.device_features = self.get_features()
+                _LOGGER.debug(self.device_features)
+                self.handle_features(self.device_features)
 
         if self._yamaha and push:                           # Push updates
             # _LOGGER.debug("Push updates")
             self._yamaha.schedule_update_ha_state()
 
-    def setYamahaDevice(self, obj):
-        _LOGGER.debug("setYamahaDevice: {}".format(obj))
+    def set_yamaha_device(self, obj):
+        """Set reference to device in HASS"""
+        _LOGGER.debug("setYamahaDevice: %s", obj)
         self._yamaha = obj
 
-    def setPower(self, power):
-        reqUrl = ENDPOINTS["setPower"].format(self._ipAddress)
+    def set_power(self, power):
+        """Send Power command."""
+        req_url = ENDPOINTS["setPower"].format(self._ip_address)
         params = {"power": "on" if power else "standby"}
-        return self.request(reqUrl, params=params)
+        return request(req_url, params=params)
 
-    def setMute(self, mute):
-        reqUrl = ENDPOINTS["setMute"].format(self._ipAddress)
+    def set_mute(self, mute):
+        """Send mute command."""
+        req_url = ENDPOINTS["setMute"].format(self._ip_address)
         params = {"enable": "true" if mute else "false"}
-        return self.request(reqUrl, params=params)
+        return request(req_url, params=params)
 
-    def setVolume(self, volume):
-        reqUrl = ENDPOINTS["setVolume"].format(self._ipAddress)
+    def set_volume(self, volume):
+        """Send Volume command."""
+        req_url = ENDPOINTS["setVolume"].format(self._ip_address)
         params = {"volume": int(volume)}
-        return self.request(reqUrl, params=params)
+        return request(req_url, params=params)
 
-    def setInput(self, inputId):
-        reqUrl = ENDPOINTS["setInput"].format(self._ipAddress)
-        params = {"input": inputId}
-        return self.request(reqUrl, params=params)
+    def set_input(self, input_id):
+        """Send Input command."""
+        req_url = ENDPOINTS["setInput"].format(self._ip_address)
+        params = {"input": input_id}
+        return request(req_url, params=params)
 
-    def setPlayback(self, playback):
-        reqUrl = ENDPOINTS["setPlayback"].format(self._ipAddress)
+    def set_playback(self, playback):
+        """Send Playback command."""
+        req_url = ENDPOINTS["setPlayback"].format(self._ip_address)
         params = {"playback": playback}
-        return self.request(reqUrl, params=params)
-
-    def request(self, url, *args, **kwargs):
-        method = kwargs.get('method', 'GET')
-        timeout = kwargs.pop('timeout', 10)                 # hass default timeout
-        try:
-            r = requests.request(method, url, *args, timeout=timeout, **kwargs)
-        except Exception as e:
-            _LOGGER.error(e)
-        else:
-            try:
-                data = r.json()
-            except Exception as e:
-                _LOGGER.error(e)
-            else:
-                _LOGGER.debug(json.dumps(data))
-                return data
+        return request(req_url, params=params)
 
     def __del__(self):
         if self._socket:
