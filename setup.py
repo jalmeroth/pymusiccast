@@ -18,5 +18,5 @@ setup(
         "Operating System :: OS Independent",
         "Topic :: Home Automation"
     ],
-    install_requires=['requests>=2.14.2']
+    install_requires=['requests==2.14.2']
 )
