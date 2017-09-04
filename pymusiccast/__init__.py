@@ -46,7 +46,7 @@ def request(url, *args, **kwargs):
 
 def message_worker(device):
     """Loop through messages and pass them on to right device"""
-    msg_q = device._messages
+    msg_q = device.messages
 
     while True:
 
@@ -61,7 +61,7 @@ def message_worker(device):
 
             if 'device_id' in data:
                 device_id = data.get('device_id')
-                if device_id == device._device_id:
+                if device_id == device.device_id:
                     device.handle_event(data)
                 else:
                     _LOGGER.warning("Received message for unknown device.")
@@ -135,7 +135,7 @@ class McDevice(object):
         super(McDevice, self).__init__()
         _LOGGER.debug("McDevice: %s", ipAddress)
         # construct message queue
-        self._messages = queue.Queue()
+        self.messages = queue.Queue()
         self.deviceInfo = None
         self.deviceFeatures = None
         self.update_status_timer = None
@@ -144,7 +144,7 @@ class McDevice(object):
         self._interval = kwargs.get('mc_interval', 480)
         self._yamaha = None
         self._socket = None
-        self._device_id = None
+        self.device_id = None
         self.initialize()
 
     def initialize(self):
@@ -152,7 +152,7 @@ class McDevice(object):
         self.initialize_socket()
         self.deviceInfo = self.get_device_info()
         _LOGGER.debug(self.deviceInfo)
-        self._device_id = (
+        self.device_id = (
             self.deviceInfo.get('device_id') if self.deviceInfo else "Unknown")
         self.initialize_worker()
 
@@ -171,7 +171,7 @@ class McDevice(object):
             _LOGGER.debug("Starting Socket Thread.")
             socket_thread = threading.Thread(
                 name="SocketThread", target=socket_worker,
-                args=(self._socket, self._messages,))
+                args=(self._socket, self.messages,))
             socket_thread.setDaemon(True)
             socket_thread.start()
 
