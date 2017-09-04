@@ -187,7 +187,8 @@ class mcDevice(object):
         if self._yamaha:
             if 'power' in message:
                 _LOGGER.debug("Power: {}".format(message.get('power')))
-                self._yamaha._power = STATE_ON if message.get('power') == "on" else STATE_OFF
+                self._yamaha._power = (
+                    STATE_ON if message.get('power') == "on" else STATE_OFF)
             if 'input' in message:
                 _LOGGER.debug("Input: {}".format(message.get('input')))
                 self._yamaha._source = message.get('input')
