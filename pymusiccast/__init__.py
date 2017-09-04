@@ -3,8 +3,8 @@ import time
 import queue
 import socket
 import logging
-import requests
 import threading
+import requests
 from homeassistant.const import (
     STATE_ON, STATE_OFF, STATE_UNKNOWN,
     STATE_PLAYING, STATE_PAUSED, STATE_IDLE
