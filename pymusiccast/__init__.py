@@ -24,8 +24,8 @@ ENDPOINTS = {
 }
 
 
-def messageWorker(device):
-
+def message_worker(device):
+    """Loop through messages and pass them on to right device"""
     q = device._messages
 
     while True:
@@ -50,7 +50,8 @@ def messageWorker(device):
         time.sleep(0.2)
 
 
-def socketWorker(sock, q):
+def socket_worker(sock, q):
+    """Socket Loop that fills message queue"""
     while True:
         data, addr = sock.recvfrom(1024)    # buffer size is 1024 bytes
         _LOGGER.debug("received message: {} from {}".format(data, addr))
@@ -140,14 +141,14 @@ class mcDevice(object):
             _LOGGER.debug("Socket open.")
             _LOGGER.debug("Starting Socket Thread.")
             socket_thread = threading.Thread(
-                name="SocketThread", target=socketWorker, args=(self._socket, self._messages,))
+                name="SocketThread", target=socket_worker, args=(self._socket, self._messages,))
             socket_thread.setDaemon(True)
             socket_thread.start()
 
     def initialize_worker(self):
         _LOGGER.debug("Starting Worker Thread.")
         worker_thread = threading.Thread(
-            name="WorkerThread", target=messageWorker, args=(self,))
+            name="WorkerThread", target=message_worker, args=(self,))
         worker_thread.setDaemon(True)
         worker_thread.start()
 
