@@ -26,6 +26,24 @@ ENDPOINTS = {
 }
 
 
+def request(url, *args, **kwargs):
+    """Do the HTTP Request and return data"""
+    method = kwargs.get('method', 'GET')
+    timeout = kwargs.pop('timeout', 10)  # hass default timeout
+    try:
+        r = requests.request(method, url, *args, timeout=timeout, **kwargs)
+    except Exception as e:
+        _LOGGER.error(e)
+    else:
+        try:
+            data = r.json()
+        except Exception as e:
+            _LOGGER.error(e)
+        else:
+            _LOGGER.debug(json.dumps(data))
+            return data
+
+
 def message_worker(device):
     """Loop through messages and pass them on to right device"""
     q = device._messages
@@ -169,12 +187,12 @@ class mcDevice(object):
     def getDeviceInfo(self):
         """Get info from device"""
         reqUrl = ENDPOINTS["getDeviceInfo"].format(self._ipAddress)
-        return self.request(reqUrl)
+        return request(reqUrl)
 
     def getFeatures(self):
         """Get features from device"""
         reqUrl = ENDPOINTS["getFeatures"].format(self._ipAddress)
-        return self.request(reqUrl)
+        return request(reqUrl)
 
     def getStatus(self):
         """Get status from device"""
@@ -183,12 +201,12 @@ class mcDevice(object):
             "X-AppPort": str(self._udp_port)
         }
         reqUrl = ENDPOINTS["getStatus"].format(self._ipAddress)
-        return self.request(reqUrl, headers=headers)
+        return request(reqUrl, headers=headers)
 
     def getPlayInfo(self):
         """Get play info from device"""
         reqUrl = ENDPOINTS["getPlayInfo"].format(self._ipAddress)
-        return self.request(reqUrl)
+        return request(reqUrl)
 
     def handleMain(self, message):
         """Handles 'main' in message"""
@@ -301,48 +319,31 @@ class mcDevice(object):
         """Send Power command."""
         reqUrl = ENDPOINTS["setPower"].format(self._ipAddress)
         params = {"power": "on" if power else "standby"}
-        return self.request(reqUrl, params=params)
+        return request(reqUrl, params=params)
 
     def setMute(self, mute):
         """Send mute command."""
         reqUrl = ENDPOINTS["setMute"].format(self._ipAddress)
         params = {"enable": "true" if mute else "false"}
-        return self.request(reqUrl, params=params)
+        return request(reqUrl, params=params)
 
     def setVolume(self, volume):
         """Send Volume command."""
         reqUrl = ENDPOINTS["setVolume"].format(self._ipAddress)
         params = {"volume": int(volume)}
-        return self.request(reqUrl, params=params)
+        return request(reqUrl, params=params)
 
     def setInput(self, inputId):
         """Send Input command."""
         reqUrl = ENDPOINTS["setInput"].format(self._ipAddress)
         params = {"input": inputId}
-        return self.request(reqUrl, params=params)
+        return request(reqUrl, params=params)
 
     def setPlayback(self, playback):
         """Send Playback command."""
         reqUrl = ENDPOINTS["setPlayback"].format(self._ipAddress)
         params = {"playback": playback}
-        return self.request(reqUrl, params=params)
-
-    def request(self, url, *args, **kwargs):
-        """Do the HTTP Request and return data"""
-        method = kwargs.get('method', 'GET')
-        timeout = kwargs.pop('timeout', 10)  # hass default timeout
-        try:
-            r = requests.request(method, url, *args, timeout=timeout, **kwargs)
-        except Exception as e:
-            _LOGGER.error(e)
-        else:
-            try:
-                data = r.json()
-            except Exception as e:
-                _LOGGER.error(e)
-            else:
-                _LOGGER.debug(json.dumps(data))
-                return data
+        return request(reqUrl, params=params)
 
     def __del__(self):
         if self._socket:
