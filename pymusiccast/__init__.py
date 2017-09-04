@@ -31,14 +31,14 @@ def request(url, *args, **kwargs):
     method = kwargs.get('method', 'GET')
     timeout = kwargs.pop('timeout', 10)  # hass default timeout
     try:
-        r = requests.request(method, url, *args, timeout=timeout, **kwargs)
-    except requests.exceptions.RequestException as e:
-        _LOGGER.error(e)
+        req = requests.request(method, url, *args, timeout=timeout, **kwargs)
+    except requests.exceptions.RequestException as error:
+        _LOGGER.error(error)
     else:
         try:
-            data = r.json()
-        except requests.exceptions.RequestException as e:
-            _LOGGER.error(e)
+            data = req.json()
+        except requests.exceptions.RequestException as error:
+            _LOGGER.error(error)
         else:
             _LOGGER.debug(json.dumps(data))
             return data
@@ -46,12 +46,12 @@ def request(url, *args, **kwargs):
 
 def message_worker(device):
     """Loop through messages and pass them on to right device"""
-    q = device._messages
+    msg_q = device._messages
 
     while True:
 
-        if not q.empty():
-            message = q.get()
+        if not msg_q.empty():
+            message = msg_q.get()
 
             data = {}
             try:
@@ -65,17 +65,17 @@ def message_worker(device):
                     device.handle_event(data)
                 else:
                     _LOGGER.warning("Received message for unknown device.")
-            q.task_done()
+            msg_q.task_done()
 
         time.sleep(0.2)
 
 
-def socket_worker(sock, q):
+def socket_worker(sock, msg_q):
     """Socket Loop that fills message queue"""
     while True:
         data, addr = sock.recvfrom(1024)    # buffer size is 1024 bytes
         _LOGGER.debug("received message: %s from %s", data, addr)
-        q.put(data)
+        msg_q.put(data)
         time.sleep(0.2)
 
 
@@ -164,8 +164,8 @@ class mcDevice(object):
         )
         try:
             self._socket.bind(('', self._udp_port))
-        except Exception as e:
-            raise e
+        except Exception as error:
+            raise error
         else:
             _LOGGER.debug("Socket open.")
             _LOGGER.debug("Starting Socket Thread.")
@@ -185,13 +185,13 @@ class mcDevice(object):
 
     def get_device_info(self):
         """Get info from device"""
-        reqUrl = ENDPOINTS["getDeviceInfo"].format(self._ipAddress)
-        return request(reqUrl)
+        req_url = ENDPOINTS["getDeviceInfo"].format(self._ipAddress)
+        return request(req_url)
 
     def get_features(self):
         """Get features from device"""
-        reqUrl = ENDPOINTS["getFeatures"].format(self._ipAddress)
-        return request(reqUrl)
+        req_url = ENDPOINTS["getFeatures"].format(self._ipAddress)
+        return request(req_url)
 
     def get_status(self):
         """Get status from device"""
@@ -199,13 +199,13 @@ class mcDevice(object):
             "X-AppName": "MusicCast/0.1(python)",
             "X-AppPort": str(self._udp_port)
         }
-        reqUrl = ENDPOINTS["getStatus"].format(self._ipAddress)
-        return request(reqUrl, headers=headers)
+        req_url = ENDPOINTS["getStatus"].format(self._ipAddress)
+        return request(req_url, headers=headers)
 
     def get_play_info(self):
         """Get play info from device"""
-        reqUrl = ENDPOINTS["getPlayInfo"].format(self._ipAddress)
-        return request(reqUrl)
+        req_url = ENDPOINTS["getPlayInfo"].format(self._ipAddress)
+        return request(req_url)
 
     def handle_main(self, message):
         """Handles 'main' in message"""
@@ -238,12 +238,12 @@ class mcDevice(object):
         # _LOGGER.debug("message: {}".format(message))
         if self._yamaha:
             if 'play_info_updated' in message:
-                playInfo = self.get_play_info()
-                # _LOGGER.debug(playInfo)
-                if playInfo:
+                play_info = self.get_play_info()
+                # _LOGGER.debug(play_info)
+                if play_info:
                     self._yamaha._media_status = MediaStatus(
-                        playInfo, self._ipAddress)
-                    playback = playInfo.get('playback')
+                        play_info, self._ipAddress)
+                    playback = play_info.get('playback')
                     # _LOGGER.debug("Playback: {}".format(playback))
                     if playback == "play":
                         self._yamaha._status = STATE_PLAYING
@@ -316,33 +316,33 @@ class mcDevice(object):
 
     def set_power(self, power):
         """Send Power command."""
-        reqUrl = ENDPOINTS["setPower"].format(self._ipAddress)
+        req_url = ENDPOINTS["setPower"].format(self._ipAddress)
         params = {"power": "on" if power else "standby"}
-        return request(reqUrl, params=params)
+        return request(req_url, params=params)
 
     def set_mute(self, mute):
         """Send mute command."""
-        reqUrl = ENDPOINTS["setMute"].format(self._ipAddress)
+        req_url = ENDPOINTS["setMute"].format(self._ipAddress)
         params = {"enable": "true" if mute else "false"}
-        return request(reqUrl, params=params)
+        return request(req_url, params=params)
 
     def set_volume(self, volume):
         """Send Volume command."""
-        reqUrl = ENDPOINTS["setVolume"].format(self._ipAddress)
+        req_url = ENDPOINTS["setVolume"].format(self._ipAddress)
         params = {"volume": int(volume)}
-        return request(reqUrl, params=params)
+        return request(req_url, params=params)
 
     def set_input(self, inputId):
         """Send Input command."""
-        reqUrl = ENDPOINTS["setInput"].format(self._ipAddress)
+        req_url = ENDPOINTS["setInput"].format(self._ipAddress)
         params = {"input": inputId}
-        return request(reqUrl, params=params)
+        return request(req_url, params=params)
 
     def set_playback(self, playback):
         """Send Playback command."""
-        reqUrl = ENDPOINTS["setPlayback"].format(self._ipAddress)
+        req_url = ENDPOINTS["setPlayback"].format(self._ipAddress)
         params = {"playback": playback}
-        return request(reqUrl, params=params)
+        return request(req_url, params=params)
 
     def __del__(self):
         if self._socket:
