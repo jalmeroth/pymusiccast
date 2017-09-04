@@ -254,10 +254,10 @@ class mcDevice(object):
                     else:
                         self._yamaha._status = STATE_UNKNOWN
 
-    def handle_features(self, deviceFeatures):
+    def handle_features(self, device_features):
         """Handles features of the device"""
-        if deviceFeatures and 'zone' in deviceFeatures:
-            for zone in deviceFeatures['zone']:
+        if device_features and 'zone' in device_features:
+            for zone in device_features['zone']:
                 if zone.get('id') == 'main':
                     input_list = zone.get('input_list', [])
                     if self._yamaha:
@@ -332,10 +332,10 @@ class mcDevice(object):
         params = {"volume": int(volume)}
         return request(req_url, params=params)
 
-    def set_input(self, inputId):
+    def set_input(self, input_id):
         """Send Input command."""
         req_url = ENDPOINTS["setInput"].format(self._ipAddress)
-        params = {"input": inputId}
+        params = {"input": input_id}
         return request(req_url, params=params)
 
     def set_playback(self, playback):
