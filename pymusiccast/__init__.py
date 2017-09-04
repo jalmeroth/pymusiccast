@@ -151,7 +151,8 @@ class mcDevice(object):
             _LOGGER.debug("Socket open.")
             _LOGGER.debug("Starting Socket Thread.")
             socket_thread = threading.Thread(
-                name="SocketThread", target=socket_worker, args=(self._socket, self._messages,))
+                name="SocketThread", target=socket_worker,
+                args=(self._socket, self._messages,))
             socket_thread.setDaemon(True)
             socket_thread.start()
 
@@ -214,7 +215,8 @@ class mcDevice(object):
                 playInfo = self.getPlayInfo()
                 # _LOGGER.debug(playInfo)
                 if playInfo:
-                    self._yamaha._media_status = MediaStatus(playInfo, self._ipAddress)
+                    self._yamaha._media_status = MediaStatus(
+                        playInfo, self._ipAddress)
                     playback = playInfo.get('playback')
                     # _LOGGER.debug("Playback: {}".format(playback))
                     if playback == "play":
@@ -262,12 +264,14 @@ class mcDevice(object):
         if status:
             _LOGGER.debug(
                 "updateStatus: firing again in %d seconds", self._interval)
-            self.updateStatus_timer = threading.Timer(self._interval, self.updateStatus)
+            self.updateStatus_timer = threading.Timer(
+                self._interval, self.updateStatus)
             self.updateStatus_timer.setDaemon(True)
             self.updateStatus_timer.start()
             self.handleMain(status)
 
-            if not self.deviceFeatures:                     # get features only once
+            # get features only once
+            if not self.deviceFeatures:
                 self.deviceFeatures = self.getFeatures()
                 _LOGGER.debug(self.deviceFeatures)
                 self.handleFeatures(self.deviceFeatures)
@@ -307,7 +311,7 @@ class mcDevice(object):
 
     def request(self, url, *args, **kwargs):
         method = kwargs.get('method', 'GET')
-        timeout = kwargs.pop('timeout', 10)                 # hass default timeout
+        timeout = kwargs.pop('timeout', 10)  # hass default timeout
         try:
             r = requests.request(method, url, *args, timeout=timeout, **kwargs)
         except Exception as e:
