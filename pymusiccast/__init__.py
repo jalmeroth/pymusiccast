@@ -42,8 +42,8 @@ def message_worker(device):
                 _LOGGER.error("Received invalid message: {}".format(message))
 
             if 'device_id' in data:
-                deviceId = data.get('device_id')
-                if deviceId == device._deviceId:
+                device_id = data.get('device_id')
+                if device_id == device._device_id:
                     device.handleEvent(data)
                 else:
                     _LOGGER.warning("Received message for unknown device.")
@@ -126,14 +126,15 @@ class mcDevice(object):
         self._interval = kwargs.get('mc_interval', 480)
         self._yamaha = None
         self._socket = None
-        self._deviceId = None
+        self._device_id = None
         self.initialize()
 
     def initialize(self):
         self.initialize_socket()
         self.deviceInfo = self.getDeviceInfo()
         _LOGGER.debug(self.deviceInfo)
-        self._deviceId = self.deviceInfo.get('device_id') if self.deviceInfo else "Unknown"
+        self._device_id = (
+            self.deviceInfo.get('device_id') if self.deviceInfo else "Unknown")
         self.initialize_worker()
         # self.updateStatus()
 
