@@ -130,6 +130,7 @@ class mcDevice(object):
         self.initialize()
 
     def initialize(self):
+        """initialize the object"""
         self.initialize_socket()
         self.deviceInfo = self.getDeviceInfo()
         _LOGGER.debug(self.deviceInfo)
@@ -139,6 +140,7 @@ class mcDevice(object):
         # self.updateStatus()
 
     def initialize_socket(self):
+        """initialize the socket"""
         self._socket = socket.socket(
             socket.AF_INET,     # IPv4
             socket.SOCK_DGRAM   # UDP
@@ -157,6 +159,7 @@ class mcDevice(object):
             socket_thread.start()
 
     def initialize_worker(self):
+        """initialize the worker thread"""
         _LOGGER.debug("Starting Worker Thread.")
         worker_thread = threading.Thread(
             name="WorkerThread", target=message_worker, args=(self,))
@@ -164,14 +167,17 @@ class mcDevice(object):
         worker_thread.start()
 
     def getDeviceInfo(self):
+        """Get info from device"""
         reqUrl = ENDPOINTS["getDeviceInfo"].format(self._ipAddress)
         return self.request(reqUrl)
 
     def getFeatures(self):
+        """Get features from device"""
         reqUrl = ENDPOINTS["getFeatures"].format(self._ipAddress)
         return self.request(reqUrl)
 
     def getStatus(self):
+        """Get status from device"""
         headers = {
             "X-AppName": "MusicCast/0.1(python)",
             "X-AppPort": str(self._udp_port)
@@ -180,10 +186,12 @@ class mcDevice(object):
         return self.request(reqUrl, headers=headers)
 
     def getPlayInfo(self):
+        """Get play info from device"""
         reqUrl = ENDPOINTS["getPlayInfo"].format(self._ipAddress)
         return self.request(reqUrl)
 
     def handleMain(self, message):
+        """Handles 'main' in message"""
         # _LOGGER.debug("message: {}".format(message))
         if self._yamaha:
             if 'power' in message:
@@ -209,6 +217,7 @@ class mcDevice(object):
             _LOGGER.debug("No yamaha-obj found")
 
     def handleNetUSB(self, message):
+        """Handles 'netusb' in message"""
         # _LOGGER.debug("message: {}".format(message))
         if self._yamaha:
             if 'play_info_updated' in message:
@@ -229,6 +238,7 @@ class mcDevice(object):
                         self._yamaha._status = STATE_UNKNOWN
 
     def handleFeatures(self, deviceFeatures):
+        """Handles features of the device"""
         if deviceFeatures and 'zone' in deviceFeatures:
             for zone in deviceFeatures['zone']:
                 if zone.get('id') == 'main':
@@ -248,6 +258,7 @@ class mcDevice(object):
                     break
 
     def handleEvent(self, message):
+        """Dispatch all event messages"""
         # _LOGGER.debug(message)
         if 'main' in message:
             self.handleMain(message['main'])
@@ -260,6 +271,7 @@ class mcDevice(object):
             self._yamaha.schedule_update_ha_state()
 
     def updateStatus(self, push=True):
+        """Update device status"""
         status = self.getStatus()
         if status:
             _LOGGER.debug(
@@ -281,35 +293,42 @@ class mcDevice(object):
             self._yamaha.schedule_update_ha_state()
 
     def setYamahaDevice(self, obj):
+        """Set reference to device in HASS"""
         _LOGGER.debug("setYamahaDevice: %s", obj)
         self._yamaha = obj
 
     def setPower(self, power):
+        """Send Power command."""
         reqUrl = ENDPOINTS["setPower"].format(self._ipAddress)
         params = {"power": "on" if power else "standby"}
         return self.request(reqUrl, params=params)
 
     def setMute(self, mute):
+        """Send mute command."""
         reqUrl = ENDPOINTS["setMute"].format(self._ipAddress)
         params = {"enable": "true" if mute else "false"}
         return self.request(reqUrl, params=params)
 
     def setVolume(self, volume):
+        """Send Volume command."""
         reqUrl = ENDPOINTS["setVolume"].format(self._ipAddress)
         params = {"volume": int(volume)}
         return self.request(reqUrl, params=params)
 
     def setInput(self, inputId):
+        """Send Input command."""
         reqUrl = ENDPOINTS["setInput"].format(self._ipAddress)
         params = {"input": inputId}
         return self.request(reqUrl, params=params)
 
     def setPlayback(self, playback):
+        """Send Playback command."""
         reqUrl = ENDPOINTS["setPlayback"].format(self._ipAddress)
         params = {"playback": playback}
         return self.request(reqUrl, params=params)
 
     def request(self, url, *args, **kwargs):
+        """Do the HTTP Request and return data"""
         method = kwargs.get('method', 'GET')
         timeout = kwargs.pop('timeout', 10)  # hass default timeout
         try:
