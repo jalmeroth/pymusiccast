@@ -138,7 +138,7 @@ class mcDevice(object):
         self._messages = queue.Queue()
         self.deviceInfo = None
         self.deviceFeatures = None
-        self.updateStatus_timer = None
+        self.update_status_timer = None
         self._ipAddress = ipAddress
         self._udp_port = udp_port
         self._interval = kwargs.get('mc_interval', 480)
@@ -292,11 +292,11 @@ class mcDevice(object):
         status = self.get_status()
         if status:
             _LOGGER.debug(
-                "updateStatus: firing again in %d seconds", self._interval)
-            self.updateStatus_timer = threading.Timer(
-                self._interval, self.updateStatus)
-            self.updateStatus_timer.setDaemon(True)
-            self.updateStatus_timer.start()
+                "update status: firing again in %d seconds", self._interval)
+            self.update_status_timer = threading.Timer(
+                self._interval, self.update_status)
+            self.update_status_timer.setDaemon(True)
+            self.update_status_timer.start()
             self.handle_main(status)
 
             # get features only once
