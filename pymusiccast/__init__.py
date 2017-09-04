@@ -62,7 +62,7 @@ def message_worker(device):
             if 'device_id' in data:
                 device_id = data.get('device_id')
                 if device_id == device._device_id:
-                    device.handleEvent(data)
+                    device.handle_event(data)
                 else:
                     _LOGGER.warning("Received message for unknown device.")
             q.task_done()
@@ -150,12 +150,11 @@ class mcDevice(object):
     def initialize(self):
         """initialize the object"""
         self.initialize_socket()
-        self.deviceInfo = self.getDeviceInfo()
+        self.deviceInfo = self.get_device_info()
         _LOGGER.debug(self.deviceInfo)
         self._device_id = (
             self.deviceInfo.get('device_id') if self.deviceInfo else "Unknown")
         self.initialize_worker()
-        # self.updateStatus()
 
     def initialize_socket(self):
         """initialize the socket"""
@@ -184,17 +183,17 @@ class mcDevice(object):
         worker_thread.setDaemon(True)
         worker_thread.start()
 
-    def getDeviceInfo(self):
+    def get_device_info(self):
         """Get info from device"""
         reqUrl = ENDPOINTS["getDeviceInfo"].format(self._ipAddress)
         return request(reqUrl)
 
-    def getFeatures(self):
+    def get_features(self):
         """Get features from device"""
         reqUrl = ENDPOINTS["getFeatures"].format(self._ipAddress)
         return request(reqUrl)
 
-    def getStatus(self):
+    def get_status(self):
         """Get status from device"""
         headers = {
             "X-AppName": "MusicCast/0.1(python)",
@@ -203,12 +202,12 @@ class mcDevice(object):
         reqUrl = ENDPOINTS["getStatus"].format(self._ipAddress)
         return request(reqUrl, headers=headers)
 
-    def getPlayInfo(self):
+    def get_play_info(self):
         """Get play info from device"""
         reqUrl = ENDPOINTS["getPlayInfo"].format(self._ipAddress)
         return request(reqUrl)
 
-    def handleMain(self, message):
+    def handle_main(self, message):
         """Handles 'main' in message"""
         # _LOGGER.debug("message: {}".format(message))
         if self._yamaha:
@@ -234,12 +233,12 @@ class mcDevice(object):
         else:
             _LOGGER.debug("No yamaha-obj found")
 
-    def handleNetUSB(self, message):
+    def handle_netusb(self, message):
         """Handles 'netusb' in message"""
         # _LOGGER.debug("message: {}".format(message))
         if self._yamaha:
             if 'play_info_updated' in message:
-                playInfo = self.getPlayInfo()
+                playInfo = self.get_play_info()
                 # _LOGGER.debug(playInfo)
                 if playInfo:
                     self._yamaha._media_status = MediaStatus(
@@ -255,7 +254,7 @@ class mcDevice(object):
                     else:
                         self._yamaha._status = STATE_UNKNOWN
 
-    def handleFeatures(self, deviceFeatures):
+    def handle_features(self, deviceFeatures):
         """Handles features of the device"""
         if deviceFeatures and 'zone' in deviceFeatures:
             for zone in deviceFeatures['zone']:
@@ -275,22 +274,22 @@ class mcDevice(object):
                         self._yamaha._source_list = input_list
                     break
 
-    def handleEvent(self, message):
+    def handle_event(self, message):
         """Dispatch all event messages"""
         # _LOGGER.debug(message)
         if 'main' in message:
-            self.handleMain(message['main'])
+            self.handle_main(message['main'])
 
         if 'netusb' in message:
-            self.handleNetUSB(message['netusb'])
+            self.handle_netusb(message['netusb'])
 
         if self._yamaha:                                    # Push updates
             # _LOGGER.debug("Push updates")
             self._yamaha.schedule_update_ha_state()
 
-    def updateStatus(self, push=True):
+    def update_status(self, push=True):
         """Update device status"""
-        status = self.getStatus()
+        status = self.get_status()
         if status:
             _LOGGER.debug(
                 "updateStatus: firing again in %d seconds", self._interval)
@@ -298,48 +297,48 @@ class mcDevice(object):
                 self._interval, self.updateStatus)
             self.updateStatus_timer.setDaemon(True)
             self.updateStatus_timer.start()
-            self.handleMain(status)
+            self.handle_main(status)
 
             # get features only once
             if not self.deviceFeatures:
-                self.deviceFeatures = self.getFeatures()
+                self.deviceFeatures = self.get_features()
                 _LOGGER.debug(self.deviceFeatures)
-                self.handleFeatures(self.deviceFeatures)
+                self.handle_features(self.deviceFeatures)
 
         if self._yamaha and push:                           # Push updates
             # _LOGGER.debug("Push updates")
             self._yamaha.schedule_update_ha_state()
 
-    def setYamahaDevice(self, obj):
+    def set_yamaha_device(self, obj):
         """Set reference to device in HASS"""
         _LOGGER.debug("setYamahaDevice: %s", obj)
         self._yamaha = obj
 
-    def setPower(self, power):
+    def set_power(self, power):
         """Send Power command."""
         reqUrl = ENDPOINTS["setPower"].format(self._ipAddress)
         params = {"power": "on" if power else "standby"}
         return request(reqUrl, params=params)
 
-    def setMute(self, mute):
+    def set_mute(self, mute):
         """Send mute command."""
         reqUrl = ENDPOINTS["setMute"].format(self._ipAddress)
         params = {"enable": "true" if mute else "false"}
         return request(reqUrl, params=params)
 
-    def setVolume(self, volume):
+    def set_volume(self, volume):
         """Send Volume command."""
         reqUrl = ENDPOINTS["setVolume"].format(self._ipAddress)
         params = {"volume": int(volume)}
         return request(reqUrl, params=params)
 
-    def setInput(self, inputId):
+    def set_input(self, inputId):
         """Send Input command."""
         reqUrl = ENDPOINTS["setInput"].format(self._ipAddress)
         params = {"input": inputId}
         return request(reqUrl, params=params)
 
-    def setPlayback(self, playback):
+    def set_playback(self, playback):
         """Send Playback command."""
         reqUrl = ENDPOINTS["setPlayback"].format(self._ipAddress)
         params = {"playback": playback}
