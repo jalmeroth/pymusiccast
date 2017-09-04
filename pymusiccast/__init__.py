@@ -39,7 +39,7 @@ def message_worker(device):
             try:
                 data = json.loads(message.decode("utf-8"))
             except ValueError:
-                _LOGGER.error("Received invalid message: {}".format(message))
+                _LOGGER.error("Received invalid message: %s", message)
 
             if 'device_id' in data:
                 device_id = data.get('device_id')
@@ -56,7 +56,7 @@ def socket_worker(sock, q):
     """Socket Loop that fills message queue"""
     while True:
         data, addr = sock.recvfrom(1024)    # buffer size is 1024 bytes
-        _LOGGER.debug("received message: {} from {}".format(data, addr))
+        _LOGGER.debug("received message: %s from %s", data, addr)
         q.put(data)
         time.sleep(0.2)
 
@@ -115,7 +115,7 @@ class mcDevice(object):
     """docstring for mcDevice"""
     def __init__(self, ipAddress, udp_port=5005, **kwargs):
         super(mcDevice, self).__init__()
-        _LOGGER.debug("mcDevice: {}".format(ipAddress))
+        _LOGGER.debug("mcDevice: %s", ipAddress)
         # construct message queue
         self._messages = queue.Queue()
         self.deviceInfo = None
@@ -186,19 +186,23 @@ class mcDevice(object):
         # _LOGGER.debug("message: {}".format(message))
         if self._yamaha:
             if 'power' in message:
-                _LOGGER.debug("Power: {}".format(message.get('power')))
+                _LOGGER.debug("Power: %s", message.get('power'))
                 self._yamaha._power = (
                     STATE_ON if message.get('power') == "on" else STATE_OFF)
             if 'input' in message:
-                _LOGGER.debug("Input: {}".format(message.get('input')))
+                _LOGGER.debug("Input: %s", message.get('input'))
                 self._yamaha._source = message.get('input')
             if 'volume' in message and 'max_volume' in message:
-                _LOGGER.debug("Volume: {} / Max: {}".format(message.get('volume'), message.get('max_volume')))
+                _LOGGER.debug(
+                    "Volume: %d / Max: %d",
+                    message.get('volume'),
+                    message.get('max_volume')
+                )
                 volume = message.get('volume') / message.get('max_volume')
                 self._yamaha._volume = volume
                 self._yamaha._volume_max = message.get('max_volume')
             if 'mute' in message:
-                _LOGGER.debug("Mute: {}".format(message.get('mute')))
+                _LOGGER.debug("Mute: %s", message.get('mute'))
                 self._yamaha._mute = message.get('mute', False)
         else:
             _LOGGER.debug("No yamaha-obj found")
@@ -234,8 +238,10 @@ class mcDevice(object):
                             input_list.remove(self._yamaha._source)
                             # put selected source at first
                             input_list = [self._yamaha._source] + input_list
-                            _LOGGER.debug("source: {} input_list: {}".format(
-                                self._yamaha._source, input_list))
+                            _LOGGER.debug(
+                                "source: %s input_list: %s",
+                                self._yamaha._source, input_list
+                            )
                         self._yamaha._source_list = input_list
                     break
 
@@ -254,7 +260,8 @@ class mcDevice(object):
     def updateStatus(self, push=True):
         status = self.getStatus()
         if status:
-            _LOGGER.debug("updateStatus: firing again in {} seconds".format(self._interval))
+            _LOGGER.debug(
+                "updateStatus: firing again in %d seconds", self._interval)
             self.updateStatus_timer = threading.Timer(self._interval, self.updateStatus)
             self.updateStatus_timer.setDaemon(True)
             self.updateStatus_timer.start()
@@ -270,7 +277,7 @@ class mcDevice(object):
             self._yamaha.schedule_update_ha_state()
 
     def setYamahaDevice(self, obj):
-        _LOGGER.debug("setYamahaDevice: {}".format(obj))
+        _LOGGER.debug("setYamahaDevice: %s", obj)
         self._yamaha = obj
 
     def setPower(self, power):
