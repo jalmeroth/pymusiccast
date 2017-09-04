@@ -216,6 +216,14 @@ class mcDevice(object):
                 if zone.get('id') == 'main':
                     input_list = zone.get('input_list', [])
                     if self._yamaha:
+                        # selected source first
+                        if self._yamaha._source:
+                            # remove selected source from index
+                            input_list.remove(self._yamaha._source)
+                            # put selected source at first
+                            input_list = [self._yamaha._source] + input_list
+                            _LOGGER.debug("source: {} input_list: {}".format(
+                                self._yamaha._source, input_list))
                         self._yamaha._source_list = input_list
                     break
 
