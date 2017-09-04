@@ -129,11 +129,11 @@ class MediaStatus(object):
                 setattr(self, item, data[item])
 
 
-class mcDevice(object):
-    """docstring for mcDevice"""
+class McDevice(object):
+    """docstring for McDevice"""
     def __init__(self, ipAddress, udp_port=5005, **kwargs):
-        super(mcDevice, self).__init__()
-        _LOGGER.debug("mcDevice: %s", ipAddress)
+        super(McDevice, self).__init__()
+        _LOGGER.debug("McDevice: %s", ipAddress)
         # construct message queue
         self._messages = queue.Queue()
         self.deviceInfo = None
