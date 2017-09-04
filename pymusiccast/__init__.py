@@ -1,3 +1,5 @@
+""""This library brings support for \
+Yamaha MusicCast devices to Home Assistant."""
 import json
 import time
 import queue
