@@ -261,18 +261,8 @@ class McDevice(object):
             for zone in device_features['zone']:
                 if zone.get('id') == 'main':
                     input_list = zone.get('input_list', [])
-                    if self._yamaha:
-                        # selected source first
-                        if self._yamaha._source:
-                            # remove selected source from index
-                            input_list.remove(self._yamaha._source)
-                            # put selected source at first
-                            input_list = [self._yamaha._source] + input_list
-                            _LOGGER.debug(
-                                "source: %s input_list: %s",
-                                self._yamaha._source, input_list
-                            )
-                        self._yamaha.source_list = input_list
+                    input_list.sort()
+                    self._yamaha.source_list = input_list
                     break
 
     def handle_event(self, message):
