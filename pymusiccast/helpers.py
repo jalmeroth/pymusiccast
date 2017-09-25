@@ -11,18 +11,10 @@ def request(url, *args, **kwargs):
     """Do the HTTP Request and return data"""
     method = kwargs.get('method', 'GET')
     timeout = kwargs.pop('timeout', 10)  # hass default timeout
-    try:
-        req = requests.request(method, url, *args, timeout=timeout, **kwargs)
-    except requests.exceptions.RequestException as error:
-        _LOGGER.error(error)
-    else:
-        try:
-            data = req.json()
-        except requests.exceptions.RequestException as error:
-            _LOGGER.error(error)
-        else:
-            _LOGGER.debug(json.dumps(data))
-            return data
+    req = requests.request(method, url, *args, timeout=timeout, **kwargs)
+    data = req.json()
+    _LOGGER.debug(json.dumps(data))
+    return data
 
 
 def message_worker(device):
@@ -54,7 +46,11 @@ def message_worker(device):
 def socket_worker(sock, msg_q):
     """Socket Loop that fills message queue"""
     while True:
-        data, addr = sock.recvfrom(1024)    # buffer size is 1024 bytes
-        _LOGGER.debug("received message: %s from %s", data, addr)
-        msg_q.put(data)
+        try:
+            data, addr = sock.recvfrom(1024)    # buffer size is 1024 bytes
+        except OSError as err:
+            _LOGGER.error(err)
+        else:
+            _LOGGER.debug("received message: %s from %s", data, addr)
+            msg_q.put(data)
         time.sleep(0.2)

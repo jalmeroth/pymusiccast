@@ -8,9 +8,11 @@ from homeassistant.const import (
     STATE_ON, STATE_OFF, STATE_UNKNOWN,
     STATE_PLAYING, STATE_PAUSED, STATE_IDLE
 )
+from requests.exceptions import RequestException
 from .const import ENDPOINTS
 from .helpers import request, message_worker, socket_worker
 from .media_status import MediaStatus
+from .exceptions import YMCInitError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,16 +33,19 @@ class McDevice(object):
         self._yamaha = None
         self._socket = None
         self.device_id = None
-        self.initialize()
+        try:
+            self.initialize()
+        except (OSError, RequestException) as err:
+            raise YMCInitError(err)
 
     def initialize(self):
         """initialize the object"""
-        self.initialize_socket()
         self.device_info = self.get_device_info()
         _LOGGER.debug(self.device_info)
         self.device_id = (
             self.device_info.get('device_id')
             if self.device_info else "Unknown")
+        self.initialize_socket()
         self.initialize_worker()
 
     def initialize_socket(self):
@@ -49,18 +54,14 @@ class McDevice(object):
             socket.AF_INET,     # IPv4
             socket.SOCK_DGRAM   # UDP
         )
-        try:
-            self._socket.bind(('', self._udp_port))
-        except Exception as error:
-            raise error
-        else:
-            _LOGGER.debug("Socket open.")
-            _LOGGER.debug("Starting Socket Thread.")
-            socket_thread = threading.Thread(
-                name="SocketThread", target=socket_worker,
-                args=(self._socket, self.messages,))
-            socket_thread.setDaemon(True)
-            socket_thread.start()
+        self._socket.bind(('', self._udp_port))
+        _LOGGER.debug("Socket open.")
+        _LOGGER.debug("Starting Socket Thread.")
+        socket_thread = threading.Thread(
+            name="SocketThread", target=socket_worker,
+            args=(self._socket, self.messages,))
+        socket_thread.setDaemon(True)
+        socket_thread.start()
 
     def initialize_worker(self):
         """initialize the worker thread"""
