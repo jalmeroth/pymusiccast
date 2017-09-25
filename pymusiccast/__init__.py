@@ -11,19 +11,9 @@ from homeassistant.const import (
     STATE_ON, STATE_OFF, STATE_UNKNOWN,
     STATE_PLAYING, STATE_PAUSED, STATE_IDLE
 )
-_LOGGER = logging.getLogger(__name__)
+from .const import ENDPOINTS
 
-ENDPOINTS = {
-    "getDeviceInfo": "http://{}/YamahaExtendedControl/v1/system/getDeviceInfo",
-    "getFeatures": "http://{}/YamahaExtendedControl/v1/system/getFeatures",
-    "getPlayInfo": "http://{}/YamahaExtendedControl/v1/netusb/getPlayInfo",
-    "getStatus": "http://{}/YamahaExtendedControl/v1/main/getStatus",
-    "setInput": "http://{}/YamahaExtendedControl/v1/main/setInput",
-    "setMute": "http://{}/YamahaExtendedControl/v1/main/setMute",
-    "setPlayback": "http://{}/YamahaExtendedControl/v1/netusb/setPlayback",
-    "setPower": "http://{}/YamahaExtendedControl/v1/main/setPower",
-    "setVolume": "http://{}/YamahaExtendedControl/v1/main/setVolume",
-}
+_LOGGER = logging.getLogger(__name__)
 
 
 def request(url, *args, **kwargs):
