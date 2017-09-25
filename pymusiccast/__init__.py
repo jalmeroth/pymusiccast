@@ -1,132 +1,20 @@
 """"This library brings support for \
 Yamaha MusicCast devices to Home Assistant."""
-import json
-import time
 import queue
 import socket
 import logging
 import threading
-import requests
 from homeassistant.const import (
     STATE_ON, STATE_OFF, STATE_UNKNOWN,
     STATE_PLAYING, STATE_PAUSED, STATE_IDLE
 )
+from requests.exceptions import RequestException
+from .const import ENDPOINTS
+from .helpers import request, message_worker, socket_worker
+from .media_status import MediaStatus
+from .exceptions import YMCInitError
+
 _LOGGER = logging.getLogger(__name__)
-
-ENDPOINTS = {
-    "getDeviceInfo": "http://{}/YamahaExtendedControl/v1/system/getDeviceInfo",
-    "getFeatures": "http://{}/YamahaExtendedControl/v1/system/getFeatures",
-    "getPlayInfo": "http://{}/YamahaExtendedControl/v1/netusb/getPlayInfo",
-    "getStatus": "http://{}/YamahaExtendedControl/v1/main/getStatus",
-    "setInput": "http://{}/YamahaExtendedControl/v1/main/setInput",
-    "setMute": "http://{}/YamahaExtendedControl/v1/main/setMute",
-    "setPlayback": "http://{}/YamahaExtendedControl/v1/netusb/setPlayback",
-    "setPower": "http://{}/YamahaExtendedControl/v1/main/setPower",
-    "setVolume": "http://{}/YamahaExtendedControl/v1/main/setVolume",
-}
-
-
-def request(url, *args, **kwargs):
-    """Do the HTTP Request and return data"""
-    method = kwargs.get('method', 'GET')
-    timeout = kwargs.pop('timeout', 10)  # hass default timeout
-    try:
-        req = requests.request(method, url, *args, timeout=timeout, **kwargs)
-    except requests.exceptions.RequestException as error:
-        _LOGGER.error(error)
-    else:
-        try:
-            data = req.json()
-        except requests.exceptions.RequestException as error:
-            _LOGGER.error(error)
-        else:
-            _LOGGER.debug(json.dumps(data))
-            return data
-
-
-def message_worker(device):
-    """Loop through messages and pass them on to right device"""
-    msg_q = device.messages
-
-    while True:
-
-        if not msg_q.empty():
-            message = msg_q.get()
-
-            data = {}
-            try:
-                data = json.loads(message.decode("utf-8"))
-            except ValueError:
-                _LOGGER.error("Received invalid message: %s", message)
-
-            if 'device_id' in data:
-                device_id = data.get('device_id')
-                if device_id == device.device_id:
-                    device.handle_event(data)
-                else:
-                    _LOGGER.warning("Received message for unknown device.")
-            msg_q.task_done()
-
-        time.sleep(0.2)
-
-
-def socket_worker(sock, msg_q):
-    """Socket Loop that fills message queue"""
-    while True:
-        data, addr = sock.recvfrom(1024)    # buffer size is 1024 bytes
-        _LOGGER.debug("received message: %s from %s", data, addr)
-        msg_q.put(data)
-        time.sleep(0.2)
-
-
-class MediaStatus(object):
-    """docstring for MediaStatus"""
-    def __init__(self, data, host):
-        super(MediaStatus, self).__init__()
-        self.host = host
-        self.play_time = 0
-        self.total_time = 0
-        self.artist = None
-        self.album = None
-        self.track = None
-        self.albumart_url = None
-        self.initialize(data)
-
-    @property
-    def media_duration(self):
-        """Duration of current playing media in seconds."""
-        return self.total_time
-
-    @property
-    def media_image_url(self):
-        """Image url of current playing media."""
-        return "http://{}{}".format(self.host, self.albumart_url)
-
-    @property
-    def media_artist(self):
-        """Artist of current playing media, music track only."""
-        return self.artist
-
-    @property
-    def media_album(self):
-        """Album of current playing media, music track only."""
-        return self.album
-
-    @property
-    def media_track(self):
-        """Track number of current playing media, music track only."""
-        return self.track
-
-    @property
-    def media_title(self):
-        """Title of current playing media."""
-        return self.media_track
-
-    def initialize(self, data):
-        """ initialize variable from loaded data """
-        for item in data:
-            if hasattr(self, item):
-                setattr(self, item, data[item])
 
 
 class McDevice(object):
@@ -145,16 +33,19 @@ class McDevice(object):
         self._yamaha = None
         self._socket = None
         self.device_id = None
-        self.initialize()
+        try:
+            self.initialize()
+        except (OSError, RequestException) as err:
+            raise YMCInitError(err)
 
     def initialize(self):
         """initialize the object"""
-        self.initialize_socket()
         self.device_info = self.get_device_info()
         _LOGGER.debug(self.device_info)
         self.device_id = (
             self.device_info.get('device_id')
             if self.device_info else "Unknown")
+        self.initialize_socket()
         self.initialize_worker()
 
     def initialize_socket(self):
@@ -163,18 +54,14 @@ class McDevice(object):
             socket.AF_INET,     # IPv4
             socket.SOCK_DGRAM   # UDP
         )
-        try:
-            self._socket.bind(('', self._udp_port))
-        except Exception as error:
-            raise error
-        else:
-            _LOGGER.debug("Socket open.")
-            _LOGGER.debug("Starting Socket Thread.")
-            socket_thread = threading.Thread(
-                name="SocketThread", target=socket_worker,
-                args=(self._socket, self.messages,))
-            socket_thread.setDaemon(True)
-            socket_thread.start()
+        self._socket.bind(('', self._udp_port))
+        _LOGGER.debug("Socket open.")
+        _LOGGER.debug("Starting Socket Thread.")
+        socket_thread = threading.Thread(
+            name="SocketThread", target=socket_worker,
+            args=(self._socket, self.messages,))
+        socket_thread.setDaemon(True)
+        socket_thread.start()
 
     def initialize_worker(self):
         """initialize the worker thread"""
@@ -261,18 +148,8 @@ class McDevice(object):
             for zone in device_features['zone']:
                 if zone.get('id') == 'main':
                     input_list = zone.get('input_list', [])
-                    if self._yamaha:
-                        # selected source first
-                        if self._yamaha._source:
-                            # remove selected source from index
-                            input_list.remove(self._yamaha._source)
-                            # put selected source at first
-                            input_list = [self._yamaha._source] + input_list
-                            _LOGGER.debug(
-                                "source: %s input_list: %s",
-                                self._yamaha._source, input_list
-                            )
-                        self._yamaha.source_list = input_list
+                    input_list.sort()
+                    self._yamaha.source_list = input_list
                     break
 
     def handle_event(self, message):
