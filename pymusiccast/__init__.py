@@ -19,15 +19,15 @@ _LOGGER = logging.getLogger(__name__)
 
 class McDevice(object):
     """docstring for McDevice"""
-    def __init__(self, ipAddress, udp_port=5005, **kwargs):
+    def __init__(self, ip_address, udp_port=5005, **kwargs):
         super(McDevice, self).__init__()
-        _LOGGER.debug("McDevice: %s", ipAddress)
+        _LOGGER.debug("McDevice: %s", ip_address)
         # construct message queue
         self.messages = queue.Queue()
         self.device_info = None
         self.device_features = None
         self.update_status_timer = None
-        self._ip_address = ipAddress
+        self._ip_address = ip_address
         self._udp_port = udp_port
         self._interval = kwargs.get('mc_interval', 480)
         self._yamaha = None
