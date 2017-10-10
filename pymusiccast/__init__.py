@@ -81,6 +81,12 @@ class McDevice(object):
         req_url = ENDPOINTS["getFeatures"].format(self._ip_address)
         return request(req_url)
 
+    @staticmethod
+    def get_location_info(ip_address):
+        """Get location info from device"""
+        req_url = ENDPOINTS["getLocationInfo"].format(ip_address)
+        return request(req_url)
+
     def get_status(self):
         """Get status from device"""
         headers = {

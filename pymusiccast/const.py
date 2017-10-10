@@ -4,6 +4,8 @@
 ENDPOINTS = {
     "getDeviceInfo": "http://{}/YamahaExtendedControl/v1/system/getDeviceInfo",
     "getFeatures": "http://{}/YamahaExtendedControl/v1/system/getFeatures",
+    "getLocationInfo": ("http://{}/YamahaExtendedControl"
+                        "/v1/system/getLocationInfo"),
     "getPlayInfo": "http://{}/YamahaExtendedControl/v1/netusb/getPlayInfo",
     "getStatus": "http://{}/YamahaExtendedControl/v1/main/getStatus",
     "setInput": "http://{}/YamahaExtendedControl/v1/main/setInput",
