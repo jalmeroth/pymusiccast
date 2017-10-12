@@ -7,10 +7,10 @@ ENDPOINTS = {
     "getLocationInfo": ("http://{}/YamahaExtendedControl"
                         "/v1/system/getLocationInfo"),
     "getPlayInfo": "http://{}/YamahaExtendedControl/v1/netusb/getPlayInfo",
-    "getStatus": "http://{}/YamahaExtendedControl/v1/main/getStatus",
-    "setInput": "http://{}/YamahaExtendedControl/v1/main/setInput",
-    "setMute": "http://{}/YamahaExtendedControl/v1/main/setMute",
     "setPlayback": "http://{}/YamahaExtendedControl/v1/netusb/setPlayback",
-    "setPower": "http://{}/YamahaExtendedControl/v1/main/setPower",
-    "setVolume": "http://{}/YamahaExtendedControl/v1/main/setVolume",
+    "getStatus": "http://{}/YamahaExtendedControl/v1/{}/getStatus",
+    "setInput": "http://{}/YamahaExtendedControl/v1/{}/setInput",
+    "setMute": "http://{}/YamahaExtendedControl/v1/{}/setMute",
+    "setPower": "http://{}/YamahaExtendedControl/v1/{}/setPower",
+    "setVolume": "http://{}/YamahaExtendedControl/v1/{}/setVolume",
 }
