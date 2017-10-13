@@ -43,15 +43,18 @@ class Zone(object):
             if 'input' in message:
                 _LOGGER.debug("Input: %s", message.get('input'))
                 self._yamaha._source = message.get('input')
-            if 'volume' in message and 'max_volume' in message:
-                _LOGGER.debug(
-                    "Volume: %d / Max: %d",
-                    message.get('volume'),
-                    message.get('max_volume')
-                )
-                volume = message.get('volume') / message.get('max_volume')
-                self._yamaha.volume = volume
-                self._yamaha.volume_max = message.get('max_volume')
+            if 'volume' in message:
+                volume = message.get('volume')
+
+                if 'max_volume' in message:
+                    volume_max = message.get('max_volume')
+                else:
+                    volume_max = self._yamaha.volume_max
+
+                _LOGGER.debug("Volume: %d / Max: %d", volume, volume_max)
+
+                self._yamaha.volume = volume / volume_max
+                self._yamaha.volume_max = volume_max
             if 'mute' in message:
                 _LOGGER.debug("Mute: %s", message.get('mute'))
                 self._yamaha.mute = message.get('mute', False)
