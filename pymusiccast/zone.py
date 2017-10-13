@@ -61,10 +61,10 @@ class Zone(object):
         else:
             _LOGGER.debug("No yamaha-obj found")
 
-    def set_yamaha_device(self, obj):
+    def set_yamaha_device(self, yamaha_device):
         """Set reference to device in HASS"""
-        _LOGGER.debug("setYamahaDevice: %s", obj)
-        self._yamaha = obj
+        _LOGGER.debug("setYamahaDevice: %s", yamaha_device)
+        self._yamaha = yamaha_device
         self.handle_message(self.get_status())
 
     def get_status(self):
