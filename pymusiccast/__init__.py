@@ -148,11 +148,12 @@ class McDevice(object):
         """Handles features of the device"""
         if device_features and 'zone' in device_features:
             for zone in device_features['zone']:
-                if zone.get('id') == 'main':
+                zone_id = zone.get('id')
+                if zone_id in self.zones:
+                    _LOGGER.debug("handle_features: %s", zone_id)
                     input_list = zone.get('input_list', [])
                     input_list.sort()
-                    self._yamaha.source_list = input_list
-                    break
+                    self.zones[zone_id].source_list = input_list
 
     def handle_event(self, message):
         """Dispatch all event messages"""

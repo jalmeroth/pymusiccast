@@ -33,6 +33,16 @@ class Zone(object):
         """Returns the ip_address."""
         return self._ip_address
 
+    @property
+    def source_list(self):
+        """Return source_list."""
+        return self._yamaha.source_list
+
+    @source_list.setter
+    def source_list(self, source_list):
+        """Sets source_list."""
+        self._yamaha.source_list = source_list
+
     def handle_message(self, message):
         """Process UDP messages"""
         if self._yamaha:
