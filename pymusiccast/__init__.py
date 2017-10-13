@@ -166,11 +166,10 @@ class McDevice(object):
         if 'netusb' in message:
             self.handle_netusb(message['netusb'])
 
-        if self._yamaha:                                    # Push updates
-            # _LOGGER.debug("Push updates")
+        if self._yamaha and self._yamaha.entity_id:     # Push updates
             self._yamaha.schedule_update_ha_state()
 
-    def update_status(self, push=True):
+    def update_status(self):
         """Update device status"""
         status = self.get_status()
         if status:
@@ -187,8 +186,7 @@ class McDevice(object):
                 _LOGGER.debug(self.device_features)
                 self.handle_features(self.device_features)
 
-        if self._yamaha and push:                           # Push updates
-            # _LOGGER.debug("Push updates")
+        if self._yamaha and self._yamaha.entity_id:     # Push updates
             self._yamaha.schedule_update_ha_state()
 
     def set_yamaha_device(self, obj):

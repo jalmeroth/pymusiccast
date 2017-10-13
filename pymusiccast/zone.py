@@ -71,11 +71,17 @@ class Zone(object):
         else:
             _LOGGER.debug("No yamaha-obj found")
 
+    def update_status(self):
+        """Updates the zone status."""
+        self.handle_message(self.get_status())
+        if self._yamaha and self._yamaha.entity_id:     # Push updates
+            self._yamaha.schedule_update_ha_state()
+
     def set_yamaha_device(self, yamaha_device):
         """Set reference to device in HASS"""
         _LOGGER.debug("setYamahaDevice: %s", yamaha_device)
         self._yamaha = yamaha_device
-        self.handle_message(self.get_status())
+        self.update_status()
 
     def get_status(self):
         """Get status from device"""
