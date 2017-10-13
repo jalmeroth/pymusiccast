@@ -30,6 +30,7 @@ class McDevice(object):
         self._zones = {}
         self._yamaha = None
         self._socket = None
+        self._name = None
         self.device_id = None
         self.device_info = None
         self.device_features = None
@@ -53,6 +54,14 @@ class McDevice(object):
     def zones(self, zones):
         """Sets receiver zones"""
         self._zones = zones
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        self._name = name
 
     def initialize(self):
         """initialize the object"""
@@ -92,6 +101,7 @@ class McDevice(object):
         """initialize receiver zones"""
         location_info = self.get_location_info()
         zone_list = location_info.get('zone_list', {'main': True})
+        self.name = location_info.get('name', 'Unknown')
 
         for zone_id in zone_list:
             if zone_list[zone_id]:  # Location setup is valid
