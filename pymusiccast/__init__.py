@@ -58,10 +58,12 @@ class McDevice(object):
 
     @property
     def name(self):
+        """Returns name of device."""
         return self._name
 
     @name.setter
     def name(self, name):
+        """Sets name of device."""
         self._name = name
 
     def initialize(self):
