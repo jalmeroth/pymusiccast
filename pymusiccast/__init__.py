@@ -199,10 +199,10 @@ class McDevice(object):
         if self._yamaha and self._yamaha.entity_id:     # Push updates
             self._yamaha.schedule_update_ha_state()
 
-    def set_yamaha_device(self, obj):
+    def set_yamaha_device(self, yamaha_device):
         """Set reference to device in HASS"""
-        _LOGGER.debug("setYamahaDevice: %s", obj)
-        self._yamaha = obj
+        _LOGGER.debug("setYamahaDevice: %s", yamaha_device)
+        self._yamaha = yamaha_device
 
     def get_play_info(self):
         """Get play info from device"""
