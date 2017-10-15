@@ -176,26 +176,42 @@ class McDevice(object):
         if 'netusb' in message:
             self.handle_netusb(message['netusb'])
 
-        if self._yamaha and self._yamaha.entity_id:     # Push updates
-            self._yamaha.schedule_update_ha_state()
+        self.update_hass()
 
     def update_status(self):
         """Update device status"""
-        status = self.get_status()
-        if status:
-            _LOGGER.debug(
-                "update status: firing again in %d seconds", self._interval)
-            self.update_status_timer = threading.Timer(
-                self._interval, self.update_status)
-            self.update_status_timer.setDaemon(True)
-            self.update_status_timer.start()
 
-            # get features only once
-            if not self.device_features:
-                self.device_features = self.get_features()
-                _LOGGER.debug(self.device_features)
-                self.handle_features(self.device_features)
+        if not self.update_status_timer:
+            _LOGGER.debug("update_status: First update")
+            # try to get first device status, register for UDP Events
+            status = self.get_status()
+            # on success, schedule first timer
+            if status:
+                self.setup_update_timer()
 
+                if not self.device_features:
+                    # get device features only once
+                    self.device_features = self.get_features()
+                    self.handle_features(self.device_features)
+                    self.update_hass()
+        else:
+            if not self.update_status_timer.is_alive():
+                # e.g. computer was suspended, while hass was running
+                _LOGGER.debug("update_status: Reschedule timer")
+                self.setup_update_timer()
+
+    def setup_update_timer(self):
+        """Schedule a Timer Thread."""
+        _LOGGER.debug(
+            "update status: firing again in %d seconds", self._interval)
+        self.update_status_timer = threading.Timer(
+            self._interval, self.get_status)
+        self.update_status_timer.setDaemon(True)
+        self.update_status_timer.start()
+
+    def update_hass(self):
+        """Update HASS."""
+        _LOGGER.debug("update_hass: Push updates")
         if self._yamaha and self._yamaha.entity_id:     # Push updates
             self._yamaha.schedule_update_ha_state()
 

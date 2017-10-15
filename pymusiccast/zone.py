@@ -13,10 +13,20 @@ class Zone(object):
     """docstring for Zone"""
     def __init__(self, receiver, zone_id='main'):
         super(Zone, self).__init__()
+        self._status = None
         self._zone_id = zone_id
         self._receiver = receiver
         self._yamaha = None
         self._ip_address = self.receiver.ip_address
+
+    @property
+    def status(self):
+        """Returns status."""
+        return self._status
+
+    @status.setter
+    def status(self, stat):
+        self._status = stat
 
     @property
     def zone_id(self):
@@ -73,20 +83,27 @@ class Zone(object):
 
     def update_status(self):
         """Updates the zone status."""
-        self.handle_message(self.get_status())
+        if not self.status:
+            _LOGGER.debug("update_status: Zone %s", self.zone_id)
+            self.status = self.get_status()
+            self.handle_message(self.status)
+            self.update_hass()
+
+    def update_hass(self):
+        """Update HASS."""
+        _LOGGER.debug("update_hass: Push updates")
         if self._yamaha and self._yamaha.entity_id:     # Push updates
             self._yamaha.schedule_update_ha_state()
-
-    def set_yamaha_device(self, yamaha_device):
-        """Set reference to device in HASS"""
-        _LOGGER.debug("setYamahaDevice: %s", yamaha_device)
-        self._yamaha = yamaha_device
-        self.update_status()
 
     def get_status(self):
         """Get status from device"""
         req_url = ENDPOINTS["getStatus"].format(self.ip_address, self.zone_id)
         return request(req_url)
+
+    def set_yamaha_device(self, yamaha_device):
+        """Set reference to device in HASS"""
+        _LOGGER.debug("setYamahaDevice: %s", yamaha_device)
+        self._yamaha = yamaha_device
 
     def set_power(self, power):
         """Send Power command."""
