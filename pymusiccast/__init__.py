@@ -34,6 +34,7 @@ class McDevice(object):
         self.device_id = None
         self.device_info = None
         self.device_features = None
+        self.location_info = None
         self.update_status_timer = None
         try:
             self.initialize()
@@ -65,8 +66,9 @@ class McDevice(object):
 
     def initialize(self):
         """initialize the object"""
+        self.location_info = self.get_location_info()
+        self.name = self.location_info.get('name', 'Unknown')
         self.device_info = self.get_device_info()
-        _LOGGER.debug(self.device_info)
         self.device_id = (
             self.device_info.get('device_id')
             if self.device_info else "Unknown")
@@ -99,9 +101,7 @@ class McDevice(object):
 
     def initialize_zones(self):
         """initialize receiver zones"""
-        location_info = self.get_location_info()
-        zone_list = location_info.get('zone_list', {'main': True})
-        self.name = location_info.get('name', 'Unknown')
+        zone_list = self.location_info.get('zone_list', {'main': True})
 
         for zone_id in zone_list:
             if zone_list[zone_id]:  # Location setup is valid
