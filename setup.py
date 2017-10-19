@@ -19,7 +19,7 @@ URL = 'https://github.com/jalmeroth/pymusiccast'
 EMAIL = 'jan+pymusiccast@almeroth.com'
 AUTHOR = 'Jan Almeroth'
 REQUIRED = [
-    'requests==2.14.2'
+    'requests>=2.0'
 ]
 
 here = os.path.abspath(os.path.dirname(__file__))
