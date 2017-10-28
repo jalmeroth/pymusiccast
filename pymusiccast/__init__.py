@@ -80,8 +80,8 @@ class McDevice(object):
 
     def initialize_socket(self):
         """initialize the socket"""
-        _LOGGER.debug("Starting Socket Thread.")
         try:
+            _LOGGER.debug("Trying to open socket.")
             self._socket = socket.socket(
                 socket.AF_INET,     # IPv4
                 socket.SOCK_DGRAM   # UDP
@@ -99,7 +99,6 @@ class McDevice(object):
 
     def initialize_worker(self):
         """initialize the worker thread"""
-        _LOGGER.debug("Starting Worker Thread.")
         worker_thread = threading.Thread(
             name="WorkerThread", target=message_worker, args=(self,))
         worker_thread.setDaemon(True)
