@@ -80,18 +80,22 @@ class McDevice(object):
 
     def initialize_socket(self):
         """initialize the socket"""
-        self._socket = socket.socket(
-            socket.AF_INET,     # IPv4
-            socket.SOCK_DGRAM   # UDP
-        )
-        self._socket.bind(('', self._udp_port))
-        _LOGGER.debug("Socket open.")
         _LOGGER.debug("Starting Socket Thread.")
-        socket_thread = threading.Thread(
-            name="SocketThread", target=socket_worker,
-            args=(self._socket, self.messages,))
-        socket_thread.setDaemon(True)
-        socket_thread.start()
+        try:
+            self._socket = socket.socket(
+                socket.AF_INET,     # IPv4
+                socket.SOCK_DGRAM   # UDP
+            )
+            self._socket.bind(('', self._udp_port))
+        except socket.error as err:
+            raise err
+        else:
+            _LOGGER.debug("Socket open.")
+            socket_thread = threading.Thread(
+                name="SocketThread", target=socket_worker,
+                args=(self._socket, self.messages,))
+            socket_thread.setDaemon(True)
+            socket_thread.start()
 
     def initialize_worker(self):
         """initialize the worker thread"""
