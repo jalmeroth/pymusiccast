@@ -91,9 +91,8 @@ class Zone(object):
 
     def update_hass(self):
         """Update HASS."""
-        _LOGGER.debug("update_hass: Push updates")
-        if self._yamaha and self._yamaha.entity_id:     # Push updates
-            self._yamaha.schedule_update_ha_state()
+        if self._yamaha:
+            self._yamaha.update_hass()
 
     def get_status(self):
         """Get status from device"""
