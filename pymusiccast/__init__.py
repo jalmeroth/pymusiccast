@@ -138,23 +138,37 @@ class McDevice(object):
     def handle_netusb(self, message):
         """Handles 'netusb' in message"""
         # _LOGGER.debug("message: {}".format(message))
+        needs_update = 0
+
         if self._yamaha:
             if 'play_info_updated' in message:
                 play_info = self.get_play_info()
                 # _LOGGER.debug(play_info)
                 if play_info:
-                    self._yamaha.media_status = MediaStatus(
-                        play_info, self._ip_address)
+                    new_media_status = MediaStatus(play_info, self._ip_address)
+
+                    if self._yamaha.media_status != new_media_status:
+                        # we need to send an update upwards
+                        self._yamaha.new_media_status(new_media_status)
+                        needs_update += 1
+
                     playback = play_info.get('playback')
                     # _LOGGER.debug("Playback: {}".format(playback))
                     if playback == "play":
-                        self._yamaha.status = STATE_PLAYING
+                        new_status = STATE_PLAYING
                     elif playback == "stop":
-                        self._yamaha.status = STATE_IDLE
+                        new_status = STATE_IDLE
                     elif playback == "pause":
-                        self._yamaha.status = STATE_PAUSED
+                        new_status = STATE_PAUSED
                     else:
-                        self._yamaha.status = STATE_UNKNOWN
+                        new_status = STATE_UNKNOWN
+
+                    if self._yamaha.status is not new_status:
+                        _LOGGER.debug("playback: %s", new_status)
+                        self._yamaha.status = new_status
+                        needs_update += 1
+
+        return needs_update
 
     def handle_features(self, device_features):
         """Handles features of the device"""
@@ -170,15 +184,19 @@ class McDevice(object):
     def handle_event(self, message):
         """Dispatch all event messages"""
         # _LOGGER.debug(message)
+        needs_update = 0
         for zone in self.zones:
             if zone in message:
                 _LOGGER.debug("Received message for zone: %s", zone)
                 self.zones[zone].handle_message(message[zone])
+                needs_update += 1
 
         if 'netusb' in message:
-            self.handle_netusb(message['netusb'])
+            needs_update += self.handle_netusb(message['netusb'])
 
-        self.update_hass()
+        if needs_update > 0:
+            _LOGGER.debug("needs_update: %d", needs_update)
+            self.update_hass()
 
     def update_status(self):
         """Update device status"""
