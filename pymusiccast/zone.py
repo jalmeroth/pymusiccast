@@ -18,6 +18,7 @@ class Zone(object):
         self._receiver = receiver
         self._yamaha = None
         self._ip_address = self.receiver.ip_address
+        self._status_sent = None
 
     @property
     def status(self):
@@ -81,18 +82,48 @@ class Zone(object):
         else:
             _LOGGER.debug("No yamaha-obj found")
 
-    def update_status(self):
+    def update_status(self, new_status=None):
         """Updates the zone status."""
-        if not self.status:
-            _LOGGER.debug("update_status: Zone %s", self.zone_id)
-            self.status = self.get_status()
-            self.handle_message(self.status)
-            self.update_hass()
+        _LOGGER.debug("update_status: Zone %s", self.zone_id)
+
+        if self.status and new_status is None:
+            _LOGGER.debug("Zone: status good.")
+        else:
+            old_status = self.status or {}
+
+            if new_status:
+                # merge new_status with existing for comparison
+                _LOGGER.debug("Set status: provided")
+
+                # make a copy of the old_status
+                status = old_status.copy()
+
+                # merge updated items into status
+                status.update(new_status)
+
+                # promote merged_status to new_status
+                new_status = status
+            else:
+                _LOGGER.debug("Set status: own")
+                new_status = self.get_status()
+
+            _LOGGER.debug("old_status: %s", old_status)
+            _LOGGER.debug("new_status: %s", new_status)
+            _LOGGER.debug("is_equal: %s", old_status == new_status)
+
+            if new_status != old_status:
+                self.handle_message(new_status)
+                self._status_sent = False
+                self.status = new_status
+
+        if not self._status_sent:
+            _LOGGER.debug("Pushing")
+            self._status_sent = self.update_hass()
 
     def update_hass(self):
         """Update HASS."""
-        if self._yamaha:
-            self._yamaha.update_hass()
+        _LOGGER.debug("update_hass")
+        return self._yamaha.update_hass() if self._yamaha else False
 
     def get_status(self):
         """Get status from device"""
