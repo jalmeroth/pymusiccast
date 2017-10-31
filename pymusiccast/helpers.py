@@ -19,6 +19,7 @@ def request(url, *args, **kwargs):
 
 def message_worker(device):
     """Loop through messages and pass them on to right device"""
+    _LOGGER.debug("Starting Worker Thread.")
     msg_q = device.messages
 
     while True:
@@ -45,6 +46,7 @@ def message_worker(device):
 
 def socket_worker(sock, msg_q):
     """Socket Loop that fills message queue"""
+    _LOGGER.debug("Starting Socket Thread.")
     while True:
         try:
             data, addr = sock.recvfrom(1024)    # buffer size is 1024 bytes

@@ -66,6 +66,20 @@ class McDevice(object):
         """Sets name of device."""
         self._name = name
 
+    @property
+    def healthy_update_timer(self):
+        """Check state of update timer."""
+        state = None
+
+        if self.update_status_timer and self.update_status_timer.is_alive():
+            _LOGGER.debug("Timer: healthy")
+            state = True
+        else:
+            _LOGGER.debug("Timer: not healthy")
+            state = False
+
+        return state
+
     def initialize(self):
         """initialize the object"""
         self.location_info = self.get_location_info()
@@ -80,22 +94,25 @@ class McDevice(object):
 
     def initialize_socket(self):
         """initialize the socket"""
-        self._socket = socket.socket(
-            socket.AF_INET,     # IPv4
-            socket.SOCK_DGRAM   # UDP
-        )
-        self._socket.bind(('', self._udp_port))
-        _LOGGER.debug("Socket open.")
-        _LOGGER.debug("Starting Socket Thread.")
-        socket_thread = threading.Thread(
-            name="SocketThread", target=socket_worker,
-            args=(self._socket, self.messages,))
-        socket_thread.setDaemon(True)
-        socket_thread.start()
+        try:
+            _LOGGER.debug("Trying to open socket.")
+            self._socket = socket.socket(
+                socket.AF_INET,     # IPv4
+                socket.SOCK_DGRAM   # UDP
+            )
+            self._socket.bind(('', self._udp_port))
+        except socket.error as err:
+            raise err
+        else:
+            _LOGGER.debug("Socket open.")
+            socket_thread = threading.Thread(
+                name="SocketThread", target=socket_worker,
+                args=(self._socket, self.messages,))
+            socket_thread.setDaemon(True)
+            socket_thread.start()
 
     def initialize_worker(self):
         """initialize the worker thread"""
-        _LOGGER.debug("Starting Worker Thread.")
         worker_thread = threading.Thread(
             name="WorkerThread", target=message_worker, args=(self,))
         worker_thread.setDaemon(True)
@@ -127,7 +144,7 @@ class McDevice(object):
         return request(req_url)
 
     def get_status(self):
-        """Get status from device"""
+        """Get status from device to register/keep alive UDP"""
         headers = {
             "X-AppName": "MusicCast/0.1(python)",
             "X-AppPort": str(self._udp_port)
@@ -135,29 +152,54 @@ class McDevice(object):
         req_url = ENDPOINTS["getStatus"].format(self.ip_address, 'main')
         return request(req_url, headers=headers)
 
+    def handle_status(self):
+        """Handle status from device"""
+        status = self.get_status()
+
+        if status:
+            # Update main-zone
+            self.zones['main'].update_status(status)
+
     def handle_netusb(self, message):
         """Handles 'netusb' in message"""
         # _LOGGER.debug("message: {}".format(message))
+        needs_update = 0
+
         if self._yamaha:
             if 'play_info_updated' in message:
                 play_info = self.get_play_info()
                 # _LOGGER.debug(play_info)
                 if play_info:
-                    self._yamaha.media_status = MediaStatus(
-                        play_info, self._ip_address)
+                    new_media_status = MediaStatus(play_info, self._ip_address)
+
+                    if self._yamaha.media_status != new_media_status:
+                        # we need to send an update upwards
+                        self._yamaha.new_media_status(new_media_status)
+                        needs_update += 1
+
                     playback = play_info.get('playback')
                     # _LOGGER.debug("Playback: {}".format(playback))
                     if playback == "play":
-                        self._yamaha.status = STATE_PLAYING
+                        new_status = STATE_PLAYING
                     elif playback == "stop":
-                        self._yamaha.status = STATE_IDLE
+                        new_status = STATE_IDLE
                     elif playback == "pause":
-                        self._yamaha.status = STATE_PAUSED
+                        new_status = STATE_PAUSED
                     else:
-                        self._yamaha.status = STATE_UNKNOWN
+                        new_status = STATE_UNKNOWN
+
+                    if self._yamaha.status is not new_status:
+                        _LOGGER.debug("playback: %s", new_status)
+                        self._yamaha.status = new_status
+                        needs_update += 1
+
+        return needs_update
 
     def handle_features(self, device_features):
         """Handles features of the device"""
+
+        self.device_features = device_features
+
         if device_features and 'zone' in device_features:
             for zone in device_features['zone']:
                 zone_id = zone.get('id')
@@ -170,52 +212,45 @@ class McDevice(object):
     def handle_event(self, message):
         """Dispatch all event messages"""
         # _LOGGER.debug(message)
+        needs_update = 0
         for zone in self.zones:
             if zone in message:
                 _LOGGER.debug("Received message for zone: %s", zone)
-                self.zones[zone].handle_message(message[zone])
+                self.zones[zone].update_status(message[zone])
 
         if 'netusb' in message:
-            self.handle_netusb(message['netusb'])
+            needs_update += self.handle_netusb(message['netusb'])
 
-        self.update_hass()
-
-    def update_status(self):
-        """Update device status"""
-
-        if not self.update_status_timer:
-            _LOGGER.debug("update_status: First update")
-            # try to get first device status, register for UDP Events
-            status = self.get_status()
-            # on success, schedule first timer
-            if status:
-                self.setup_update_timer()
-
-                if not self.device_features:
-                    # get device features only once
-                    self.device_features = self.get_features()
-                    self.handle_features(self.device_features)
-                    self.update_hass()
-        else:
-            if not self.update_status_timer.is_alive():
-                # e.g. computer was suspended, while hass was running
-                _LOGGER.debug("update_status: Reschedule timer")
-                self.setup_update_timer()
-
-    def setup_update_timer(self):
-        """Schedule a Timer Thread."""
-        _LOGGER.debug(
-            "update status: firing again in %d seconds", self._interval)
-        self.update_status_timer = threading.Timer(
-            self._interval, self.get_status)
-        self.update_status_timer.setDaemon(True)
-        self.update_status_timer.start()
+        if needs_update > 0:
+            _LOGGER.debug("needs_update: %d", needs_update)
+            self.update_hass()
 
     def update_hass(self):
         """Update HASS."""
-        _LOGGER.debug("update_hass: Push updates")
-        if self._yamaha and self._yamaha.entity_id:     # Push updates
-            self._yamaha.schedule_update_ha_state()
+        return self._yamaha.update_hass() if self._yamaha else False
+
+    def update_status(self, reset=False):
+        """Update device status."""
+        if self.healthy_update_timer and not reset:
+            return
+
+        # get device features only once
+        if not self.device_features:
+            self.handle_features(self.get_features())
+
+        # Get status from device to register/keep alive UDP
+        self.handle_status()
+
+        # Schedule next execution
+        self.setup_update_timer()
+
+    def setup_update_timer(self, reset=False):
+        """Schedule a Timer Thread."""
+        _LOGGER.debug("Timer: firing again in %d seconds", self._interval)
+        self.update_status_timer = threading.Timer(
+            self._interval, self.update_status, [True])
+        self.update_status_timer.setDaemon(True)
+        self.update_status_timer.start()
 
     def set_yamaha_device(self, yamaha_device):
         """Set reference to device in HASS"""
