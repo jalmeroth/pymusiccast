@@ -90,12 +90,7 @@ class MediaStatus(object):
         # _LOGGER.debug("DIFF: %d", diff)
 
         # we tolerate 10 seconds shift
-        if diff > 10:
-            # _LOGGER.debug("MediaStatus: Seek detection")
-            return False
-        else:
-            # _LOGGER.debug("MediaStatus: Generic compare")
-            return old == new
+        return False if diff > 10 else old == new
 
     def __ne__(self, new_media_status):
         """Comparison: are two objects not equal"""
