@@ -87,7 +87,7 @@ class Zone(object):
         _LOGGER.debug("update_status: Zone %s", self.zone_id)
 
         if self.status and new_status is None:
-            _LOGGER.debug("Zone: status good.")
+            _LOGGER.debug("Zone: healthy.")
         else:
             old_status = self.status or {}
 
@@ -117,12 +117,10 @@ class Zone(object):
                 self.status = new_status
 
         if not self._status_sent:
-            _LOGGER.debug("Pushing")
             self._status_sent = self.update_hass()
 
     def update_hass(self):
         """Update HASS."""
-        _LOGGER.debug("update_hass")
         return self._yamaha.update_hass() if self._yamaha else False
 
     def get_status(self):
