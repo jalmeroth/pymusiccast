@@ -35,6 +35,7 @@ class McDevice(object):
         self.device_info = None
         self.device_features = None
         self.location_info = None
+        self.network_status = None
         self.update_status_timer = None
         try:
             self.initialize()
@@ -82,8 +83,9 @@ class McDevice(object):
 
     def initialize(self):
         """initialize the object"""
+        self.network_status = self.get_network_status()
+        self.name = self.network_status.get('network_name', 'Unknown')
         self.location_info = self.get_location_info()
-        self.name = self.location_info.get('name', 'Unknown')
         self.device_info = self.get_device_info()
         self.device_id = (
             self.device_info.get('device_id')
@@ -141,6 +143,11 @@ class McDevice(object):
     def get_location_info(self):
         """Get location info from device"""
         req_url = ENDPOINTS["getLocationInfo"].format(self._ip_address)
+        return request(req_url)
+
+    def get_network_status(self):
+        """Get network status from device"""
+        req_url = ENDPOINTS["getNetworkStatus"].format(self._ip_address)
         return request(req_url)
 
     def get_status(self):
