@@ -4,11 +4,11 @@ import queue
 import socket
 import logging
 import threading
-from homeassistant.const import (
+from requests.exceptions import RequestException
+from .const import (
+    ENDPOINTS,
     STATE_UNKNOWN, STATE_PLAYING, STATE_PAUSED, STATE_IDLE
 )
-from requests.exceptions import RequestException
-from .const import ENDPOINTS
 from .helpers import request, message_worker, socket_worker
 from .media_status import MediaStatus
 from .exceptions import YMCInitError

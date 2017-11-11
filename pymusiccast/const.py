@@ -16,3 +16,10 @@ ENDPOINTS = {
     "setPower": "http://{}/YamahaExtendedControl/v1/{}/setPower",
     "setVolume": "http://{}/YamahaExtendedControl/v1/{}/setVolume",
 }
+
+STATE_UNKNOWN = "unknown"
+STATE_ON = "on"
+STATE_OFF = "off"
+STATE_PLAYING = "playing"
+STATE_PAUSED = "paused"
+STATE_IDLE = "idle"
