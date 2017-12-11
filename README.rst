@@ -4,7 +4,7 @@ pymusiccast
 (This project is still work in progress and Pull-Requests are always
 welcome! 😉)
 
-pymusiccast is `a mediaplayer
+pymusiccast is a `mediaplayer
 component <https://home-assistant.io/components/media_player.yamaha_musiccast/>`__
 for the open-source home automation platform `Home
 Assistant <https://home-assistant.io/>`__. pymusiccast allows you to
