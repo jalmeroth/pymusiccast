@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 """This is a docstring."""
 import logging
-from homeassistant.const import (
-    STATE_ON, STATE_OFF
-)
-from .const import ENDPOINTS
+from .const import ENDPOINTS, STATE_ON, STATE_OFF
 from .helpers import request
 _LOGGER = logging.getLogger(__name__)
 
