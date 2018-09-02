@@ -164,7 +164,7 @@ class Zone(object):
         params = {"input": input_id}
         return request_get(req_url, params=params)
 
-    def update_distribution_info(self, new_distribution_info):
+    def update_distribution_info(self, new_distribution_info=None):
         """Get distribution info from device and update zone"""
         _LOGGER.debug("update_distribution_info: Zone %s", self.zone_id)
 
