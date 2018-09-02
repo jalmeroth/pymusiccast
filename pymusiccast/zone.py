@@ -2,7 +2,7 @@
 """This is a docstring."""
 import logging
 from .const import ENDPOINTS, STATE_ON, STATE_OFF
-from .helpers import request
+from .helpers import request_get
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -123,7 +123,7 @@ class Zone(object):
     def get_status(self):
         """Get status from device"""
         req_url = ENDPOINTS["getStatus"].format(self.ip_address, self.zone_id)
-        return request(req_url)
+        return request_get(req_url)
 
     def set_yamaha_device(self, yamaha_device):
         """Set reference to device in HASS"""
@@ -134,22 +134,39 @@ class Zone(object):
         """Send Power command."""
         req_url = ENDPOINTS["setPower"].format(self.ip_address, self.zone_id)
         params = {"power": "on" if power else "standby"}
-        return request(req_url, params=params)
+        return request_get(req_url, params=params)
 
     def set_mute(self, mute):
         """Send mute command."""
         req_url = ENDPOINTS["setMute"].format(self.ip_address, self.zone_id)
         params = {"enable": "true" if mute else "false"}
-        return request(req_url, params=params)
+        return request_get(req_url, params=params)
 
     def set_volume(self, volume):
         """Send Volume command."""
         req_url = ENDPOINTS["setVolume"].format(self.ip_address, self.zone_id)
         params = {"volume": int(volume)}
-        return request(req_url, params=params)
+        return request_get(req_url, params=params)
 
     def set_input(self, input_id):
         """Send Input command."""
         req_url = ENDPOINTS["setInput"].format(self.ip_address, self.zone_id)
         params = {"input": input_id}
-        return request(req_url, params=params)
+        return request_get(req_url, params=params)
+
+    def update_distribution_info(self, distribution_info):
+        """Get distribution info from device and update zone"""
+        _LOGGER.debug("message: %s", distribution_info)
+
+    def start_distribution_group(self, clients, group_name):
+        """Create a new distribution group and start serving the clients"""
+        req_url = ENDPOINTS["setServerInfo"].format(self._ip_address)
+        params = {"playback": playback}
+
+        #    payload =   {
+        #            'group_id': '9A237BF5AB80ED3C7251DFF49825CA42',
+        #            'type': 'add',
+        #            'client_list': clients
+        #        }
+
+        #return request_get(req_url, payload=params)

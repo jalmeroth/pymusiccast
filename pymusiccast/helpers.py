@@ -7,7 +7,7 @@ import requests
 _LOGGER = logging.getLogger(__name__)
 
 
-def request(url, *args, **kwargs):
+def request_get(url, *args, **kwargs):
     """Do the HTTP Request and return data"""
     method = kwargs.get('method', 'GET')
     timeout = kwargs.pop('timeout', 10)  # hass default timeout
@@ -15,6 +15,8 @@ def request(url, *args, **kwargs):
     data = req.json()
     _LOGGER.debug(json.dumps(data))
     return data
+
+
 
 
 def message_worker(device):

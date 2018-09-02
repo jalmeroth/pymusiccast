@@ -15,6 +15,13 @@ ENDPOINTS = {
     "setMute": "http://{}/YamahaExtendedControl/v1/{}/setMute",
     "setPower": "http://{}/YamahaExtendedControl/v1/{}/setPower",
     "setVolume": "http://{}/YamahaExtendedControl/v1/{}/setVolume",
+    "getDistributionInfo": "http://{}/YamahaExtendedControl"
+                           "/v1/dist/getDistributionInfo",
+    "setServerInfo": "http://{}/YamahaExtendedControl/v1/dist/setServerInfo",
+    "setClientInfo": "http://{}/YamahaExtendedControl/v1/dist/setClientInfo",
+    "startDistribution": "http://{}/YamahaExtendedControl"
+                         "/v1/dist/startDistribution",
+    "setGroupName": "http://{}/YamahaExtendedControl/v1/dist/setGroupName",
 }
 
 STATE_UNKNOWN = "unknown"
