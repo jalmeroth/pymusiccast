@@ -11,6 +11,7 @@ class Zone(object):
     def __init__(self, receiver, zone_id='main'):
         super(Zone, self).__init__()
         self._status = None
+        self._distribution_info = None
         self._zone_id = zone_id
         self._receiver = receiver
         self._yamaha = None
@@ -25,6 +26,15 @@ class Zone(object):
     @status.setter
     def status(self, stat):
         self._status = stat
+
+    @property
+    def distribution_info(self):
+        """Returns distribution_info."""
+        return self._distribution_info
+
+    @distribution_info.setter
+    def distribution_info(self, stat):
+        self._distribution_info = stat
 
     @property
     def zone_id(self):
@@ -154,9 +164,53 @@ class Zone(object):
         params = {"input": input_id}
         return request_get(req_url, params=params)
 
-    def update_distribution_info(self, distribution_info):
+    def update_distribution_info(self, new_distribution_info):
         """Get distribution info from device and update zone"""
-        _LOGGER.debug("message: %s", distribution_info)
+        _LOGGER.debug("update_distribution_info: Zone %s", self.zone_id)
+
+        if self.status and new_distribution_info is None:
+            _LOGGER.debug("Zone: healthy.")
+        else:
+            old_distribution_info = self.distribution_info or {}
+
+            if new_distribution_info:
+                # merge new_distribution_info with existing for comparison
+                _LOGGER.debug("Set distribution_info: provided")
+
+                # make a copy of the old_distribution_info
+                distribution_info = old_distribution_info.copy()
+
+                # merge updated items into status
+                distribution_info.update(new_distribution_info)
+
+                # promote merged_status to new_status
+                new_distribution_info = distribution_info
+            else:
+                _LOGGER.debug("Set distribution_info: own")
+                new_distribution_info = self.get_distribution_info()
+
+            _LOGGER.debug("old_distribution_info: %s", old_distribution_info)
+            _LOGGER.debug("new_distribution_info: %s", new_distribution_info)
+            _LOGGER.debug("is_equal: %s", old_distribution_info == new_distribution_info)
+
+            if new_distribution_info != old_distribution_info:
+                self.handle_distribution_info(new_distribution_info)
+                self._status_sent = False
+                self.distribution_info = new_distribution_info
+
+        if not self._status_sent:
+            self._status_sent = self.update_hass()
+
+    def handle_distribution_info(self, message):
+        """Process UDP messages"""
+        if self._yamaha:
+            if 'role' in message:
+                _LOGGER.debug("Role: %s", message.get('role'))
+                self._yamaha.group_distribution = (
+                    STATE_OFF if not message.get('client_list') else STATE_ON)
+        else:
+            _LOGGER.debug("No yamaha-obj found")
+     
 
     def start_distribution_group(self, clients, group_name):
         """Create a new distribution group and start serving the clients"""
