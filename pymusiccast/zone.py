@@ -215,12 +215,33 @@ class Zone(object):
     def start_distribution_group(self, clients, group_name):
         """Create a new distribution group and start serving the clients"""
         req_url = ENDPOINTS["setServerInfo"].format(self._ip_address)
-        params = {"playback": playback}
-
-        #    payload =   {
-        #            'group_id': '9A237BF5AB80ED3C7251DFF49825CA42',
-        #            'type': 'add',
-        #            'client_list': clients
-        #        }
-
-        #return request_get(req_url, payload=params)
+        payload = {'group_id': '9A237BF5AB80ED3C7251DFF49825CA42',
+                  'type': 'add',
+                  'client_list': clients}
+        #group_id is a 32-digit hex
+        #payload = { "group_id":"9A237BF5AB80ED3C7251DFF49825CA42", "type":"add", "client_list":["192.168.1.45"] }
+        _LOGGER.debug("Response setServerInfo:")
+        resp = request_get(req_url, method='POST', json=payload)
+        #TODO: Check response before continuing
+        
+        for client in clients:
+            req_url = ENDPOINTS["setClientInfo"].format(client)
+            payload = {'group_id': '9A237BF5AB80ED3C7251DFF49825CA42',
+                      'server_ip_address': self._ip_address}
+            #payload = "group_id":"9A237BF5AB80ED3C7251DFF49825CA42", "zone":["main", "zone2"] }
+            #payload = "group_id":"9A237BF5AB80ED3C7251DFF49825CA42", "zone":["main", "zone2"], "server_ip_address":"192.168.1.46" }
+            _LOGGER.debug("Response setClientInfo:")
+            resp = request_get(req_url, method='POST', json=payload)
+        
+        req_url = ENDPOINTS["startDistribution"].format(self.ip_address)
+        params = {"num": int(0)}
+        _LOGGER.debug("Response startDistribution:")
+        resp = request_get(req_url, params=params)
+        
+        
+        req_url = ENDPOINTS["setGroupName"].format(self._ip_address)
+        payload = {'name': group_name}
+        #payload = { "name":"NewGroup"}
+        _LOGGER.debug("Response setGroupName:")
+        return  request_get(req_url, method='POST', json=payload)
+        

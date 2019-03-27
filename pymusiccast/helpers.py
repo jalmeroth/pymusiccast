@@ -9,7 +9,7 @@ _LOGGER = logging.getLogger(__name__)
 
 def request_get(url, *args, **kwargs):
     """Do the HTTP Request and return data"""
-    method = kwargs.get('method', 'GET')
+    method = kwargs.pop('method', 'GET')
     timeout = kwargs.pop('timeout', 10)  # hass default timeout
     req = requests.request(method, url, *args, timeout=timeout, **kwargs)
     data = req.json()
