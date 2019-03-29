@@ -21,6 +21,8 @@ ENDPOINTS = {
     "setClientInfo": "http://{}/YamahaExtendedControl/v1/dist/setClientInfo",
     "startDistribution": "http://{}/YamahaExtendedControl"
                          "/v1/dist/startDistribution",
+    "stopDistribution": "http://{}/YamahaExtendedControl"
+                         "/v1/dist/stopDistribution",
     "setGroupName": "http://{}/YamahaExtendedControl/v1/dist/setGroupName",
 }
 
