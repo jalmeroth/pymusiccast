@@ -3,7 +3,7 @@
 import random
 import logging
 from .const import ENDPOINTS, STATE_ON, STATE_OFF
-from .helpers import request_get
+from .helpers import request
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -154,7 +154,7 @@ class Zone(object):
     def get_status(self):
         """Get status from device"""
         req_url = ENDPOINTS["getStatus"].format(self.ip_address, self.zone_id)
-        return request_get(req_url)
+        return request(req_url)
 
     def set_yamaha_device(self, yamaha_device):
         """Set reference to device in HASS"""
@@ -165,25 +165,25 @@ class Zone(object):
         """Send Power command."""
         req_url = ENDPOINTS["setPower"].format(self.ip_address, self.zone_id)
         params = {"power": "on" if power else "standby"}
-        return request_get(req_url, params=params)
+        return request(req_url, params=params)
 
     def set_mute(self, mute):
         """Send mute command."""
         req_url = ENDPOINTS["setMute"].format(self.ip_address, self.zone_id)
         params = {"enable": "true" if mute else "false"}
-        return request_get(req_url, params=params)
+        return request(req_url, params=params)
 
     def set_volume(self, volume):
         """Send Volume command."""
         req_url = ENDPOINTS["setVolume"].format(self.ip_address, self.zone_id)
         params = {"volume": int(volume)}
-        return request_get(req_url, params=params)
+        return request(req_url, params=params)
 
     def set_input(self, input_id):
         """Send Input command."""
         req_url = ENDPOINTS["setInput"].format(self.ip_address, self.zone_id)
         params = {"input": input_id}
-        return request_get(req_url, params=params)
+        return request(req_url, params=params)
 
     def update_distribution_info(self, new_distribution_info=None):
         """Get distribution info from device and update zone"""
@@ -238,7 +238,7 @@ class Zone(object):
         """For SERVER: Set the new name of the group"""
         req_url = ENDPOINTS["setGroupName"].format(self._ip_address)
         payload = {'name': group_name}
-        return  request_get(req_url, method='POST', json=payload)
+        return  request(req_url, method='POST', json=payload)
       
 
     def distribution_group_add(self, clients):
@@ -261,7 +261,7 @@ class Zone(object):
             #payload = "group_id":"9A237BF5AB80ED3C7251DFF49825CA42", "zone":["main", "zone2"], "server_ip_address":"192.168.1.46" }
             #_LOGGER.debug("setClientInfo payload: ")
             #_LOGGER.debug(payload)
-            resp = request_get(req_url, method='POST', json=payload)
+            resp = request(req_url, method='POST', json=payload)
             #TODO: check response?
             
         _LOGGER.debug("%s: adding to the server the clients: %s", self._ip_address, clients)
@@ -272,13 +272,13 @@ class Zone(object):
         #payload = { "group_id":"9A237BF5AB80ED3C7251DFF49825CA42", "type":"add", "client_list":["192.168.1.45"] }
         #_LOGGER.debug("setServerInfo payload: " )
         #_LOGGER.debug(payload)
-        resp = request_get(req_url, method='POST', json=payload)
+        resp = request(req_url, method='POST', json=payload)
         #TODO: Check response before continuing
         
         _LOGGER.debug("%s: Starting the distribution", self._ip_address)
         req_url = ENDPOINTS["startDistribution"].format(self.ip_address)
         params = {"num": int(0)}
-        resp = request_get(req_url, params=params)
+        resp = request(req_url, params=params)
         return resp
         
     def distribution_group_check_clients(self):
@@ -290,12 +290,12 @@ class Zone(object):
         for client in self.group_clients:
             #check if it is still a client with correct group and input
             req_url = ENDPOINTS["getDistributionInfo"].format(client)
-            response = request_get(req_url)
+            response = request(req_url)
             if response.get('role') != 'client' or response.get('group_id')!= self.group_id:
                 clients_to_remove.append(client)
                 continue
             req_url = ENDPOINTS["getStatus"].format(client, self.zone_id)
-            response = request_get(req_url)
+            response = request(req_url)
             if response.get('input') != "mc_link":
                 clients_to_remove.append(client)
         if len(clients_to_remove)>0:
@@ -314,7 +314,7 @@ class Zone(object):
             req_url = ENDPOINTS["setClientInfo"].format(client)
             payload = {'group_id': '',
                        'zone': self._zone_id}
-            resp = request_get(req_url, method='POST', json=payload)
+            resp = request(req_url, method='POST', json=payload)
             if client in old_clients:
                 old_clients.remove(client)
         
@@ -325,22 +325,22 @@ class Zone(object):
                    'client_list': clients}
         #_LOGGER.debug("setServerInfo payload: " )
         #_LOGGER.debug(payload)
-        resp = request_get(req_url, method='POST', json=payload)
+        resp = request(req_url, method='POST', json=payload)
         
         if len(old_clients) > 0:
             req_url = ENDPOINTS["startDistribution"].format(self.ip_address)
             params = {"num": int(0)}
             _LOGGER.debug("%s: Updating the distribution with remaining clients: %s", self._ip_address,old_clients)
-            resp = request_get(req_url, params=params)
+            resp = request(req_url, params=params)
         else:
             _LOGGER.debug("%s: No more clients, resetting server", self._ip_address)
             req_url = ENDPOINTS["setServerInfo"].format(self._ip_address)
             payload = {'group_id': ''}
-            return request_get(req_url, method='POST', json=payload)
+            return request(req_url, method='POST', json=payload)
             
             req_url = ENDPOINTS["stopDistribution"].format(self.ip_address)
             _LOGGER.debug("%s: Stopping the distribution", self._ip_address)
-            resp = request_get(req_url)
+            resp = request(req_url)
         return resp
         
     def distribution_group_stop(self):
@@ -360,4 +360,4 @@ class Zone(object):
         req_url = ENDPOINTS["setClientInfo"].format(self.ip_address)
         payload = {'group_id': '',
                        'zone': self._zone_id}
-        resp = request_get(req_url, method='POST', json=payload)
+        resp = request(req_url, method='POST', json=payload)

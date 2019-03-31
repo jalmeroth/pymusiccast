@@ -9,7 +9,7 @@ from .const import (
     ENDPOINTS,
     STATE_UNKNOWN, STATE_PLAYING, STATE_PAUSED, STATE_IDLE
 )
-from .helpers import request_get, message_worker, socket_worker
+from .helpers import request, message_worker, socket_worker
 from .media_status import MediaStatus
 from .exceptions import YMCInitError
 from .zone import Zone
@@ -135,22 +135,22 @@ class McDevice(object):
     def get_device_info(self):
         """Get info from device"""
         req_url = ENDPOINTS["getDeviceInfo"].format(self._ip_address)
-        return request_get(req_url)
+        return request(req_url)
 
     def get_features(self):
         """Get features from device"""
         req_url = ENDPOINTS["getFeatures"].format(self._ip_address)
-        return request_get(req_url)
+        return request(req_url)
 
     def get_location_info(self):
         """Get location info from device"""
         req_url = ENDPOINTS["getLocationInfo"].format(self._ip_address)
-        return request_get(req_url)
+        return request(req_url)
 
     def get_network_status(self):
         """Get network status from device"""
         req_url = ENDPOINTS["getNetworkStatus"].format(self._ip_address)
-        return request_get(req_url)
+        return request(req_url)
 
     def get_status(self):
         """Get status from device to register/keep alive UDP"""
@@ -159,7 +159,7 @@ class McDevice(object):
             "X-AppPort": str(self._udp_port)
         }
         req_url = ENDPOINTS["getStatus"].format(self.ip_address, 'main')
-        return request_get(req_url, headers=headers)
+        return request(req_url, headers=headers)
 
     def handle_status(self):
         """Handle status from device"""
@@ -221,7 +221,7 @@ class McDevice(object):
     def update_distribution_info(self):
         """Get distribution info from device and update zone"""
         req_url = ENDPOINTS["getDistributionInfo"].format(self._ip_address)
-        response = request_get(req_url)
+        response = request(req_url)
         _LOGGER.debug("%s: Distribution Info Message: %s", self._ip_address, response)
         if 'server_zone' in response:
             server_zone = response.get('server_zone')
@@ -284,13 +284,13 @@ class McDevice(object):
     def get_play_info(self):
         """Get play info from device"""
         req_url = ENDPOINTS["getPlayInfo"].format(self._ip_address)
-        return request_get(req_url)
+        return request(req_url)
 
     def set_playback(self, playback):
         """Send Playback command."""
         req_url = ENDPOINTS["setPlayback"].format(self._ip_address)
         params = {"playback": playback}
-        return request_get(req_url, params=params)
+        return request(req_url, params=params)
 
     def __del__(self):
         if self._socket:

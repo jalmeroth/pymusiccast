@@ -8,7 +8,7 @@ import re
 _LOGGER = logging.getLogger(__name__)
 
 
-def request_get(url, *args, **kwargs):
+def request(url, *args, **kwargs):
     """Do the HTTP Request and return data"""
     method = kwargs.pop('method', 'GET')
     timeout = kwargs.pop('timeout', 10)  # hass default timeout
