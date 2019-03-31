@@ -15,13 +15,13 @@ from .exceptions import YMCInitError
 from .zone import Zone
 
 _LOGGER = logging.getLogger(__name__)
-
+  
 
 class McDevice(object):
     """docstring for McDevice"""
     def __init__(self, ip_address, udp_port=5005, **kwargs):
         super(McDevice, self).__init__()
-        _LOGGER.debug("McDevice: %s", ip_address)
+        _LOGGER.debug("%s: New McDevice", ip_address)
         # construct message queue
         self.messages = queue.Queue()
         self._ip_address = ip_address
@@ -74,10 +74,10 @@ class McDevice(object):
         state = None
 
         if self.update_status_timer and self.update_status_timer.is_alive():
-            _LOGGER.debug("Timer: healthy")
+            _LOGGER.debug("%s: Timer: healthy", self._ip_address)
             state = True
         else:
-            _LOGGER.debug("Timer: not healthy")
+            _LOGGER.debug("%s: Timer: not healthy", self._ip_address)
             state = False
 
         return state
@@ -99,7 +99,7 @@ class McDevice(object):
     def initialize_socket(self):
         """initialize the socket"""
         try:
-            _LOGGER.debug("Trying to open socket.")
+            _LOGGER.debug("%s: Trying to open socket.", self._ip_address)
             self._socket = socket.socket(
                 socket.AF_INET,     # IPv4
                 socket.SOCK_DGRAM   # UDP
@@ -108,7 +108,7 @@ class McDevice(object):
         except socket.error as err:
             raise err
         else:
-            _LOGGER.debug("Socket open.")
+            _LOGGER.debug("%s: Socket open.", self._ip_address)
             socket_thread = threading.Thread(
                 name="SocketThread", target=socket_worker,
                 args=(self._socket, self.messages,))
@@ -130,7 +130,7 @@ class McDevice(object):
             if zone_list[zone_id]:  # Location setup is valid
                 self.zones[zone_id] = Zone(self, zone_id=zone_id)
             else:                   # Location setup is not valid
-                _LOGGER.debug("Ignoring zone: %s", zone_id)
+                _LOGGER.debug("%s: Ignoring zone: %s", self._ip_address, zone_id)
 
     def get_device_info(self):
         """Get info from device"""
@@ -164,7 +164,7 @@ class McDevice(object):
     def handle_status(self):
         """Handle status from device"""
         status = self.get_status()
-
+        _LOGGER.debug("%s: getting status.", self._ip_address)
         if status:
             # Update main-zone
             self.zones['main'].update_status(status)
@@ -198,7 +198,7 @@ class McDevice(object):
                         new_status = STATE_UNKNOWN
 
                     if self._yamaha.status is not new_status:
-                        _LOGGER.debug("playback: %s", new_status)
+                        _LOGGER.debug("%s: playback: %s", self._ip_address, new_status)
                         self._yamaha.status = new_status
                         needs_update += 1
 
@@ -213,7 +213,7 @@ class McDevice(object):
             for zone in device_features['zone']:
                 zone_id = zone.get('id')
                 if zone_id in self.zones:
-                    _LOGGER.debug("handle_features: %s", zone_id)
+                    _LOGGER.debug("%s: handle_features: %s", self._ip_address, zone_id)
                     input_list = zone.get('input_list', [])
                     input_list.sort()
                     self.zones[zone_id].source_list = input_list
@@ -222,7 +222,7 @@ class McDevice(object):
         """Get distribution info from device and update zone"""
         req_url = ENDPOINTS["getDistributionInfo"].format(self._ip_address)
         response = request_get(req_url)
-        _LOGGER.debug("Distribution Info Message: %s", response)
+        _LOGGER.debug("%s: Distribution Info Message: %s", self._ip_address, response)
         if 'server_zone' in response:
             server_zone = response.get('server_zone')
             self.zones[server_zone].update_distribution_info(response)
@@ -236,7 +236,7 @@ class McDevice(object):
         needs_update = 0
         for zone in self.zones:
             if zone in message:
-                _LOGGER.debug("Received message for zone: %s", zone)
+                _LOGGER.debug("%s: Received message for zone: %s", self._ip_address, zone)
                 self.zones[zone].update_status(message[zone])
 
         if 'netusb' in message:
@@ -246,7 +246,7 @@ class McDevice(object):
             self.update_distribution_info()
 
         if needs_update > 0:
-            _LOGGER.debug("needs_update: %d", needs_update)
+            _LOGGER.debug("%s: needs_update: %d", self._ip_address, needs_update)
             self.update_hass()
 
     def update_hass(self):
@@ -270,7 +270,7 @@ class McDevice(object):
 
     def setup_update_timer(self, reset=False):
         """Schedule a Timer Thread."""
-        _LOGGER.debug("Timer: firing again in %d seconds", self._interval)
+        _LOGGER.debug("%s: Timer: firing again in %d seconds", self._ip_address, self._interval)
         self.update_status_timer = threading.Timer(
             self._interval, self.update_status, [True])
         self.update_status_timer.setDaemon(True)
@@ -278,7 +278,7 @@ class McDevice(object):
 
     def set_yamaha_device(self, yamaha_device):
         """Set reference to device in HASS"""
-        _LOGGER.debug("setYamahaDevice: %s", yamaha_device)
+        _LOGGER.debug("%s: setYamahaDevice: %s", self._ip_address, yamaha_device)
         self._yamaha = yamaha_device
 
     def get_play_info(self):
@@ -294,5 +294,5 @@ class McDevice(object):
 
     def __del__(self):
         if self._socket:
-            _LOGGER.debug("Closing Socket.")
+            _LOGGER.debug("%s: Closing Socket.", self._ip_address)
             self._socket.close()

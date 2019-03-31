@@ -19,7 +19,6 @@ class Zone(object):
         self._ip_address = self.receiver.ip_address
         self._status_sent = None
         self._group_id = None
-        self._group_clients = []
 
     @property
     def status(self):
@@ -38,6 +37,25 @@ class Zone(object):
     @distribution_info.setter
     def distribution_info(self, stat):
         self._distribution_info = stat
+
+    @property
+    def group_id(self):
+        """Returns the distribution group id."""
+        return self._distribution_info.get("group_id")
+
+    @property
+    def group_is_server(self):
+        """Returns true if this zone believes it is a server"""
+        return self._distribution_info.get('role') == 'server' and self.group_id != '00000000000000000000000000000000'
+
+    @property
+    def group_clients(self):
+        """Returns the ip address of distribution group clients."""
+        if not self.group_is_server:
+            return []
+        if self._distribution_info.get('client_list') is None:
+            return []
+        return [e.get('ip_address') for e in self._distribution_info.get('client_list')]
 
     @property
     def zone_id(self):
@@ -68,11 +86,11 @@ class Zone(object):
         """Process UDP messages"""
         if self._yamaha:
             if 'power' in message:
-                _LOGGER.debug("Power: %s", message.get('power'))
+                _LOGGER.debug("%s: Power: %s", self._ip_address, message.get('power'))
                 self._yamaha.power = (
                     STATE_ON if message.get('power') == "on" else STATE_OFF)
             if 'input' in message:
-                _LOGGER.debug("Input: %s", message.get('input'))
+                _LOGGER.debug("%s: Input: %s", self._ip_address, message.get('input'))
                 self._yamaha._source = message.get('input')
             if 'volume' in message:
                 volume = message.get('volume')
@@ -82,28 +100,28 @@ class Zone(object):
                 else:
                     volume_max = self._yamaha.volume_max
 
-                _LOGGER.debug("Volume: %d / Max: %d", volume, volume_max)
+                _LOGGER.debug("%s: Volume: %d / Max: %d", self._ip_address, volume, volume_max)
 
                 self._yamaha.volume = volume / volume_max
                 self._yamaha.volume_max = volume_max
             if 'mute' in message:
-                _LOGGER.debug("Mute: %s", message.get('mute'))
+                _LOGGER.debug("%s: Mute: %s", self._ip_address, message.get('mute'))
                 self._yamaha.mute = message.get('mute', False)
         else:
-            _LOGGER.debug("No yamaha-obj found")
+            _LOGGER.debug("%s: No yamaha-obj found", self._ip_address)
 
     def update_status(self, new_status=None):
         """Updates the zone status."""
-        _LOGGER.debug("update_status: Zone %s", self.zone_id)
+        _LOGGER.debug("%s: update_status: Zone %s", self._ip_address, self.zone_id)
 
         if self.status and new_status is None:
-            _LOGGER.debug("Zone: healthy.")
+            _LOGGER.debug("%s: Zone: healthy.", self._ip_address)
         else:
             old_status = self.status or {}
 
             if new_status:
                 # merge new_status with existing for comparison
-                _LOGGER.debug("Set status: provided")
+                _LOGGER.debug("%s: Set status: provided", self._ip_address)
 
                 # make a copy of the old_status
                 status = old_status.copy()
@@ -114,12 +132,12 @@ class Zone(object):
                 # promote merged_status to new_status
                 new_status = status
             else:
-                _LOGGER.debug("Set status: own")
+                _LOGGER.debug("%s: Set status: own", self._ip_address)
                 new_status = self.get_status()
 
-            _LOGGER.debug("old_status: %s", old_status)
-            _LOGGER.debug("new_status: %s", new_status)
-            _LOGGER.debug("is_equal: %s", old_status == new_status)
+            _LOGGER.debug("%s: old_status: %s", self._ip_address, old_status)
+            _LOGGER.debug("%s: new_status: %s", self._ip_address, new_status)
+            _LOGGER.debug("%s: is_equal: %s", self._ip_address, old_status == new_status)
 
             if new_status != old_status:
                 self.handle_message(new_status)
@@ -140,7 +158,7 @@ class Zone(object):
 
     def set_yamaha_device(self, yamaha_device):
         """Set reference to device in HASS"""
-        _LOGGER.debug("setYamahaDevice: %s", yamaha_device)
+        _LOGGER.debug("%s: setYamahaDevice: %s", self._ip_address, yamaha_device)
         self._yamaha = yamaha_device
 
     def set_power(self, power):
@@ -169,16 +187,16 @@ class Zone(object):
 
     def update_distribution_info(self, new_distribution_info=None):
         """Get distribution info from device and update zone"""
-        _LOGGER.debug("update_distribution_info: Zone %s", self.zone_id)
+        _LOGGER.debug("%s: update_distribution_info: Zone %s", self._ip_address,self.zone_id)
 
-        if self.status and new_distribution_info is None:
-            _LOGGER.debug("Zone: healthy.")
+        if self.distribution_info and new_distribution_info is None:
+            _LOGGER.debug("%s: distrib: healthy.", self._ip_address)
         else:
             old_distribution_info = self.distribution_info or {}
 
             if new_distribution_info:
                 # merge new_distribution_info with existing for comparison
-                _LOGGER.debug("Set distribution_info: provided")
+                _LOGGER.debug("%s: Set distribution_info: provided", self._ip_address)
 
                 # make a copy of the old_distribution_info
                 distribution_info = old_distribution_info.copy()
@@ -189,17 +207,20 @@ class Zone(object):
                 # promote merged_status to new_status
                 new_distribution_info = distribution_info
             else:
-                _LOGGER.debug("Set distribution_info: own")
+                _LOGGER.debug("S%s: et distribution_info: own", self._ip_address)
                 new_distribution_info = self.get_distribution_info()
 
-            _LOGGER.debug("old_distribution_info: %s", old_distribution_info)
-            _LOGGER.debug("new_distribution_info: %s", new_distribution_info)
-            _LOGGER.debug("is_equal: %s", old_distribution_info == new_distribution_info)
 
             if new_distribution_info != old_distribution_info:
+                _LOGGER.debug("%s: old_distribution_info: %s", self._ip_address, old_distribution_info)
+                _LOGGER.debug("%s: new_distribution_info: %s", self._ip_address, new_distribution_info)
+                _LOGGER.debug("%s: is_equal: %s", self._ip_address, old_distribution_info == new_distribution_info)
                 self.handle_distribution_info(new_distribution_info)
                 self._status_sent = False
                 self.distribution_info = new_distribution_info
+            #if server, check for connected clients:
+            if self.group_is_server:
+                self.distribution_group_check_clients()
 
         if not self._status_sent:
             self._status_sent = self.update_hass()
@@ -207,29 +228,31 @@ class Zone(object):
     def handle_distribution_info(self, message):
         """Process UDP messages"""
         if self._yamaha:
-            if 'role' in message:
-                _LOGGER.debug("Role: %s", message.get('role'))
-                self._yamaha.group_distribution = (
-                    STATE_OFF if not message.get('client_list') else STATE_ON)
+            _LOGGER.debug("%s: updating group of entity", self._ip_address)
+            self._yamaha.update_group()
         else:
-            _LOGGER.debug("No yamaha-obj found")
+            _LOGGER.debug("%s: No yamaha-obj found", self._ip_address)
     
         
     def distribution_group_set_name(self, group_name):
-        """Set the new name of the group"""
+        """For SERVER: Set the new name of the group"""
         req_url = ENDPOINTS["setGroupName"].format(self._ip_address)
         payload = {'name': group_name}
         return  request_get(req_url, method='POST', json=payload)
+      
 
     def distribution_group_add(self, clients):
-        """Add clients to distribution group and start serving the clients"""
+        """For SERVER: Add clients to distribution group and start serving the clients"""
+        if len(clients) == 0:
+            return
         #TODO: check that we can switch as a server...
-        if self._group_id==None:
-          self._group_id = '%032x' % random.randrange(16**32)
-          
+        group_id = self.group_id
+        if group_id=='00000000000000000000000000000000':
+            group_id = '%032x' % random.randrange(16**32)
+        _LOGGER.debug("%s: Setting the clients to be clients: %s", self._ip_address, clients)
         for client in clients:
             req_url = ENDPOINTS["setClientInfo"].format(client)
-            payload = {'group_id': self._group_id,
+            payload = {'group_id': group_id,
                        'zone': self._zone_id,
                        'server_ip_address': self._ip_address
             }
@@ -240,10 +263,10 @@ class Zone(object):
             #_LOGGER.debug(payload)
             resp = request_get(req_url, method='POST', json=payload)
             #TODO: check response?
-            self._group_clients.append(client)
             
+        _LOGGER.debug("%s: adding to the server the clients: %s", self._ip_address, clients)
         req_url = ENDPOINTS["setServerInfo"].format(self._ip_address)
-        payload = {'group_id': self._group_id,
+        payload = {'group_id': group_id,
                    'type': 'add',
                    'client_list': clients}
         #payload = { "group_id":"9A237BF5AB80ED3C7251DFF49825CA42", "type":"add", "client_list":["192.168.1.45"] }
@@ -252,52 +275,89 @@ class Zone(object):
         resp = request_get(req_url, method='POST', json=payload)
         #TODO: Check response before continuing
         
+        _LOGGER.debug("%s: Starting the distribution", self._ip_address)
         req_url = ENDPOINTS["startDistribution"].format(self.ip_address)
         params = {"num": int(0)}
-        _LOGGER.debug("Response startDistribution:")
         resp = request_get(req_url, params=params)
         return resp
         
+    def distribution_group_check_clients(self):
+        """For SERVER: Contacting clients to ensure they are still serving our group."""
+        if not self.group_is_server:
+            return
+        _LOGGER.debug("%s: Checking client status. Current registered clients: %s", self._ip_address,self.group_clients)
+        clients_to_remove = []
+        for client in self.group_clients:
+            #check if it is still a client with correct group and input
+            req_url = ENDPOINTS["getDistributionInfo"].format(client)
+            response = request_get(req_url)
+            if response.get('role') != 'client' or response.get('group_id')!= self.group_id:
+                clients_to_remove.append(client)
+                continue
+            req_url = ENDPOINTS["getStatus"].format(client, self.zone_id)
+            response = request_get(req_url)
+            if response.get('input') != "mc_link":
+                clients_to_remove.append(client)
+        if len(clients_to_remove)>0:
+            _LOGGER.debug("%s: Clients: %s does not seem to be connected anymore... removing", self._ip_address,clients_to_remove)
+            self.distribution_group_remove(clients_to_remove)
+          
         
     def distribution_group_remove(self, clients):
-        """Remove clients, stop distribution if no more."""
+        """For SERVER: Remove clients, stop distribution if no more."""
+        if not self.group_is_server or len(clients)==0:
+            return
+        old_clients = self.group_clients.copy()
+        
         for client in clients:
-            _LOGGER.debug("Resetting client: %s", client)
+            _LOGGER.debug("%s: Resetting client: %s", self._ip_address, client)
             req_url = ENDPOINTS["setClientInfo"].format(client)
             payload = {'group_id': '',
                        'zone': self._zone_id}
             resp = request_get(req_url, method='POST', json=payload)
-            if client in self._group_clients:
-                self.remove(client)
+            if client in old_clients:
+                old_clients.remove(client)
         
+        _LOGGER.debug("%s: Removing from server the clients: %s", self._ip_address, clients)
         req_url = ENDPOINTS["setServerInfo"].format(self._ip_address)
-        payload = {'group_id': self._group_id,
+        payload = {'group_id': self.group_id,
                    'type': 'remove',
                    'client_list': clients}
         #_LOGGER.debug("setServerInfo payload: " )
         #_LOGGER.debug(payload)
         resp = request_get(req_url, method='POST', json=payload)
         
-        if len(self._group_clients) > 0:
+        if len(old_clients) > 0:
             req_url = ENDPOINTS["startDistribution"].format(self.ip_address)
             params = {"num": int(0)}
-            _LOGGER.debug("Response updateDistribution:")
+            _LOGGER.debug("%s: Updating the distribution with remaining clients: %s", self._ip_address,old_clients)
             resp = request_get(req_url, params=params)
         else:
-            self._group_id=None
+            _LOGGER.debug("%s: No more clients, resetting server", self._ip_address)
             req_url = ENDPOINTS["setServerInfo"].format(self._ip_address)
             payload = {'group_id': ''}
-            _LOGGER.debug("Response resetServerInfo:")
             return request_get(req_url, method='POST', json=payload)
             
             req_url = ENDPOINTS["stopDistribution"].format(self.ip_address)
-            _LOGGER.debug("Response stopDistribution:")
+            _LOGGER.debug("%s: Stopping the distribution", self._ip_address)
             resp = request_get(req_url)
-            
         return resp
         
     def distribution_group_stop(self):
-        """Remove all the clients and stop the distribution group"""
-        self.distribution_group_remove(self._group_clients)
+        """For SERVER: Remove all the clients and stop the distribution group"""
+        if not self.group_is_server:
+            return
+        _LOGGER.debug("%s: stopDistribution client_list: %s", self._ip_address, self.group_clients)
+        self.distribution_group_remove(self.group_clients)
         
         
+    def distribution_group_leave(self):
+        """For CLIENT: The client disconnect from group. (The server will need to then updates its group)"""
+        if self.group_is_server:
+            self.distribution_group_stop()
+            return
+        _LOGGER.debug("%s: client is leaving the group", self._ip_address)
+        req_url = ENDPOINTS["setClientInfo"].format(self.ip_address)
+        payload = {'group_id': '',
+                       'zone': self._zone_id}
+        resp = request_get(req_url, method='POST', json=payload)
