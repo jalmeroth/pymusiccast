@@ -15,7 +15,7 @@ from .exceptions import YMCInitError
 from .zone import Zone
 
 _LOGGER = logging.getLogger(__name__)
-  
+
 
 class McDevice(object):
     """docstring for McDevice"""
@@ -228,7 +228,6 @@ class McDevice(object):
             self.zones[server_zone].update_distribution_info(response)
         else:
             self.zones['main'].update_distribution_info(response)
-
 
     def handle_event(self, message):
         """Dispatch all event messages"""

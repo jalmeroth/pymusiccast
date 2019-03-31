@@ -14,7 +14,7 @@ def request(url, *args, **kwargs):
     timeout = kwargs.pop('timeout', 10)  # hass default timeout
     req = requests.request(method, url, *args, timeout=timeout, **kwargs)
     data = req.json()
-    ip = re.findall( r'[0-9]+(?:\.[0-9]+){3}', url )
+    ip = re.findall(r'[0-9]+(?:\.[0-9]+){3}', url)
     _LOGGER.debug("%s: " + json.dumps(data), ip[0])
     return data
 
@@ -54,6 +54,6 @@ def socket_worker(sock, msg_q):
         except OSError as err:
             _LOGGER.error(err)
         else:
-            _LOGGER.debug("%s received message: %s from %s",addr, data, addr)
+            _LOGGER.debug("%s received message: %s from %s", addr, data, addr)
             msg_q.put(data)
         time.sleep(0.2)
