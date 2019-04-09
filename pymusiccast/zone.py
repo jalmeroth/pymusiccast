@@ -207,7 +207,7 @@ class Zone(object):
                 new_distribution_info = distribution_info
             else:
                 _LOGGER.debug("S%s: et distribution_info: own", self._ip_address)
-                new_distribution_info = self.get_distribution_info()
+                new_distribution_info = self._receiver.update_distribution_info()
 
             if new_distribution_info != old_distribution_info:
                 _LOGGER.debug("%s: old_distribution_info: %s", self._ip_address, old_distribution_info)
@@ -319,7 +319,7 @@ class Zone(object):
             _LOGGER.debug("%s: No more clients, resetting server", self._ip_address)
             req_url = ENDPOINTS["setServerInfo"].format(self._ip_address)
             payload = {'group_id': ''}
-            return request(req_url, method='POST', json=payload)
+            request(req_url, method='POST', json=payload)
 
             req_url = ENDPOINTS["stopDistribution"].format(self.ip_address)
             _LOGGER.debug("%s: Stopping the distribution", self._ip_address)
@@ -343,3 +343,4 @@ class Zone(object):
         payload = {'group_id': '',
                    'zone': self._zone_id}
         resp = request(req_url, method='POST', json=payload)
+        return resp

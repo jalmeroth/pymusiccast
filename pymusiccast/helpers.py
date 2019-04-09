@@ -4,7 +4,7 @@ import json
 import time
 import logging
 import requests
-import re
+from urllib.parse import urlparse
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -14,8 +14,9 @@ def request(url, *args, **kwargs):
     timeout = kwargs.pop('timeout', 10)  # hass default timeout
     req = requests.request(method, url, *args, timeout=timeout, **kwargs)
     data = req.json()
-    ip = re.findall(r'[0-9]+(?:\.[0-9]+){3}', url)
-    _LOGGER.debug("%s: " + json.dumps(data), ip[0])
+    urlparsed = urlparse(url)
+    ip = urlparsed.netloc
+    _LOGGER.debug("%s: " + json.dumps(data), ip)
     return data
 
 
