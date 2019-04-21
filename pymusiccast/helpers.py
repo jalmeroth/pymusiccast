@@ -3,17 +3,20 @@
 import json
 import time
 import logging
+from urllib.parse import urlparse
 import requests
 _LOGGER = logging.getLogger(__name__)
 
 
 def request(url, *args, **kwargs):
     """Do the HTTP Request and return data"""
-    method = kwargs.get('method', 'GET')
+    method = kwargs.pop('method', 'GET')
     timeout = kwargs.pop('timeout', 10)  # hass default timeout
     req = requests.request(method, url, *args, timeout=timeout, **kwargs)
     data = req.json()
-    _LOGGER.debug(json.dumps(data))
+    urlparsed = urlparse(url)
+    ip_addrress = urlparsed.netloc
+    _LOGGER.debug("%s: %s", json.dumps(data), ip_addrress)
     return data
 
 
@@ -38,9 +41,9 @@ def message_worker(device):
                 if device_id == device.device_id:
                     device.handle_event(data)
                 else:
-                    _LOGGER.warning("Received message for unknown device.")
+                    _LOGGER.warning("%s: Received message for unknown device.",
+                                    device.ip_address)
             msg_q.task_done()
-
         time.sleep(0.2)
 
 
@@ -53,6 +56,6 @@ def socket_worker(sock, msg_q):
         except OSError as err:
             _LOGGER.error(err)
         else:
-            _LOGGER.debug("received message: %s from %s", data, addr)
+            _LOGGER.debug("%s received message: %s from %s", addr, data, addr)
             msg_q.put(data)
         time.sleep(0.2)
