@@ -206,7 +206,7 @@ class Zone(object):
                 # promote merged_status to new_status
                 new_distribution_info = distribution_info
             else:
-                _LOGGER.debug("S%s: et distribution_info: own", self._ip_address)
+                _LOGGER.debug("%s: Set distribution_info: own", self._ip_address)
                 new_distribution_info = self._receiver.update_distribution_info()
 
             if new_distribution_info != old_distribution_info:
