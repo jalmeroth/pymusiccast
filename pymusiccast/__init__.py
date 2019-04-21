@@ -36,7 +36,6 @@ class McDevice(object):
         self.device_features = None
         self.location_info = None
         self.network_status = None
-        self.distribution_info = None
         self.update_status_timer = None
         try:
             self.initialize()
@@ -130,7 +129,8 @@ class McDevice(object):
             if zone_list[zone_id]:  # Location setup is valid
                 self.zones[zone_id] = Zone(self, zone_id=zone_id)
             else:                   # Location setup is not valid
-                _LOGGER.debug("%s: Ignoring zone: %s", self._ip_address, zone_id)
+                _LOGGER.debug("%s: Ignoring zone: %s", self._ip_address,
+                              zone_id)
 
     def get_device_info(self):
         """Get info from device"""
@@ -198,7 +198,8 @@ class McDevice(object):
                         new_status = STATE_UNKNOWN
 
                     if self._yamaha.status is not new_status:
-                        _LOGGER.debug("%s: playback: %s", self._ip_address, new_status)
+                        _LOGGER.debug("%s: playback: %s", self._ip_address,
+                                      new_status)
                         self._yamaha.status = new_status
                         needs_update += 1
 
@@ -213,7 +214,8 @@ class McDevice(object):
             for zone in device_features['zone']:
                 zone_id = zone.get('id')
                 if zone_id in self.zones:
-                    _LOGGER.debug("%s: handle_features: %s", self._ip_address, zone_id)
+                    _LOGGER.debug("%s: handle_features: %s", self._ip_address,
+                                  zone_id)
                     input_list = zone.get('input_list', [])
                     input_list.sort()
                     self.zones[zone_id].source_list = input_list
@@ -222,7 +224,8 @@ class McDevice(object):
         """Get distribution info from device and update zone"""
         req_url = ENDPOINTS["getDistributionInfo"].format(self._ip_address)
         response = request(req_url)
-        _LOGGER.debug("%s: Distribution Info Message: %s", self._ip_address, response)
+        _LOGGER.debug("%s: Distribution Info Message: %s", self._ip_address,
+                      response)
         if 'server_zone' in response:
             server_zone = response.get('server_zone')
             self.zones[server_zone].update_distribution_info(response)
@@ -235,17 +238,21 @@ class McDevice(object):
         needs_update = 0
         for zone in self.zones:
             if zone in message:
-                _LOGGER.debug("%s: Received message for zone: %s", self._ip_address, zone)
+                _LOGGER.debug("%s: Received message for zone: %s: %s",
+                              self._ip_address, zone, message)
                 self.zones[zone].update_status(message[zone])
 
         if 'netusb' in message:
             needs_update += self.handle_netusb(message['netusb'])
 
         if 'dist' in message:
+            _LOGGER.debug("%s: Received dist update for zone %s: %s",
+                          self._ip_address, zone, message)
             self.update_distribution_info()
 
         if needs_update > 0:
-            _LOGGER.debug("%s: needs_update: %d", self._ip_address, needs_update)
+            _LOGGER.debug("%s: needs_update: %d", self._ip_address,
+                          needs_update)
             self.update_hass()
 
     def update_hass(self):
@@ -269,7 +276,8 @@ class McDevice(object):
 
     def setup_update_timer(self, reset=False):
         """Schedule a Timer Thread."""
-        _LOGGER.debug("%s: Timer: firing again in %d seconds", self._ip_address, self._interval)
+        _LOGGER.debug("%s: Timer: firing again in %d seconds",
+                      self._ip_address, self._interval)
         self.update_status_timer = threading.Timer(
             self._interval, self.update_status, [True])
         self.update_status_timer.setDaemon(True)
@@ -277,7 +285,8 @@ class McDevice(object):
 
     def set_yamaha_device(self, yamaha_device):
         """Set reference to device in HASS"""
-        _LOGGER.debug("%s: setYamahaDevice: %s", self._ip_address, yamaha_device)
+        _LOGGER.debug("%s: setYamahaDevice: %s", self._ip_address,
+                      yamaha_device)
         self._yamaha = yamaha_device
 
     def get_play_info(self):

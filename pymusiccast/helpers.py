@@ -3,8 +3,8 @@
 import json
 import time
 import logging
-import requests
 from urllib.parse import urlparse
+import requests
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -15,8 +15,8 @@ def request(url, *args, **kwargs):
     req = requests.request(method, url, *args, timeout=timeout, **kwargs)
     data = req.json()
     urlparsed = urlparse(url)
-    ip = urlparsed.netloc
-    _LOGGER.debug("%s: " + json.dumps(data), ip)
+    ip_addrress = urlparsed.netloc
+    _LOGGER.debug("%s: %s", json.dumps(data), ip_addrress)
     return data
 
 
@@ -41,7 +41,8 @@ def message_worker(device):
                 if device_id == device.device_id:
                     device.handle_event(data)
                 else:
-                    _LOGGER.warning("%s: Received message for unknown device.", device._ip_address)
+                    _LOGGER.warning("%s: Received message for unknown device.",
+                                    device.ip_address)
             msg_q.task_done()
         time.sleep(0.2)
 
