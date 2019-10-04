@@ -104,6 +104,7 @@ class McDevice(object):
             self._socket = socket.socket(
                 socket.AF_INET, socket.SOCK_DGRAM  # IPv4  # UDP
             )
+            self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self._socket.bind(("", self._udp_port))
         except socket.error as err:
             raise err
