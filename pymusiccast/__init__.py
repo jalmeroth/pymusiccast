@@ -13,6 +13,7 @@ from .exceptions import YMCInitError
 from .helpers import message_worker, request, socket_worker
 from .media_status import MediaStatus
 from .zone import Zone
+from .dist import DistGroup
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class McDevice(object):
         self._yamaha = None
         self._socket = None
         self._name = None
+        self._hass = kwargs.get("hass")
         self.device_id = None
         self.device_info = None
         self.device_features = None
@@ -230,6 +232,13 @@ class McDevice(object):
 
         if "netusb" in message:
             needs_update += self.handle_netusb(message["netusb"])
+
+        if "dist" in message:
+            if message["dist"].get("dist_info_updated"):
+                info_updated = DistGroup.dist_info_updated(self.ip_address, self._hass)
+                if info_updated:
+                    server_zone = info_updated.get("server_zone")
+                    self.zones[server_zone].update_dist_info(info_updated)
 
         if needs_update > 0:
             _LOGGER.debug("needs_update: %d", needs_update)

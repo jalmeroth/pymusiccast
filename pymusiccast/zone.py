@@ -2,7 +2,7 @@
 """This is a docstring."""
 import logging
 
-from .const import ENDPOINTS, STATE_OFF, STATE_ON
+from .const import ENDPOINTS, STATE_OFF, STATE_ON, GROUP_ID_NULL
 from .helpers import request
 
 _LOGGER = logging.getLogger(__name__)
@@ -14,6 +14,7 @@ class Zone(object):
     def __init__(self, receiver, zone_id="main"):
         super(Zone, self).__init__()
         self._status = None
+        self._dist_info = {}
         self._zone_id = zone_id
         self._receiver = receiver
         self._yamaha = None
@@ -28,6 +29,36 @@ class Zone(object):
     @status.setter
     def status(self, stat):
         self._status = stat
+
+    @property
+    def dist_info(self):
+        """Return distribution_info."""
+        return self._dist_info
+
+    @dist_info.setter
+    def dist_info(self, dist_info):
+        self._dist_info = dist_info
+
+    @property
+    def group_id(self):
+        """Return the distribution group id."""
+        return self._dist_info.get("group_id") or GROUP_ID_NULL
+
+    @property
+    def group_is_server(self):
+        """Return true if this zone believes it is a server."""
+        return (
+            self._dist_info.get("role") == "server" and self.group_id != GROUP_ID_NULL
+        )
+
+    @property
+    def group_clients(self):
+        """Return the ip address of distribution group clients."""
+        if not self.group_is_server:
+            return []
+        if self._dist_info.get("client_list") is None:
+            return []
+        return [e.get("ip_address") for e in self._dist_info.get("client_list")]
 
     @property
     def zone_id(self):
@@ -157,3 +188,13 @@ class Zone(object):
         req_url = ENDPOINTS["setInput"].format(self.ip_address, self.zone_id)
         params = {"input": input_id}
         return request(req_url, params=params)
+
+    def update_dist_info(self, new_dist=None):
+        """Get distribution info from device and update zone."""
+        _LOGGER.debug("%s: update_dist_info: Zone %s", self.ip_address, self.zone_id)
+        if new_dist is None:
+            return
+        print(new_dist)
+        group_members = new_dist.get("group_members")
+        self._yamaha.group_members = group_members
+        self._status_sent = self.update_hass()
