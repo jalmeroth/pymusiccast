@@ -9,9 +9,10 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Zone(object):
-    """docstring for Zone"""
+    """Represent a devices' Zone."""
 
     def __init__(self, receiver, zone_id="main"):
+        """Initialize the zone."""
         super(Zone, self).__init__()
         self._status = None
         self._dist_info = {}
@@ -23,7 +24,7 @@ class Zone(object):
 
     @property
     def status(self):
-        """Returns status."""
+        """Return status."""
         return self._status
 
     @status.setter
@@ -62,17 +63,17 @@ class Zone(object):
 
     @property
     def zone_id(self):
-        """Returns the zone_id."""
+        """Return the zone_id."""
         return self._zone_id
 
     @property
     def receiver(self):
-        """Returns the receiver."""
+        """Return the receiver."""
         return self._receiver
 
     @property
     def ip_address(self):
-        """Returns the ip_address."""
+        """Return the ip_address."""
         return self._ip_address
 
     @property
@@ -82,19 +83,19 @@ class Zone(object):
 
     @source_list.setter
     def source_list(self, source_list):
-        """Sets source_list."""
+        """Set source_list."""
         self._yamaha.source_list = source_list
 
     def handle_message(self, message):
-        """Process UDP messages"""
+        """Process UDP messages."""
         if self._yamaha:
             if "power" in message:
-                _LOGGER.debug("Power: %s", message.get("power"))
+                _LOGGER.debug("%s: Power: %s", self._ip_address, message.get("power"))
                 self._yamaha.power = (
                     STATE_ON if message.get("power") == "on" else STATE_OFF
                 )
             if "input" in message:
-                _LOGGER.debug("Input: %s", message.get("input"))
+                _LOGGER.debug("%s: Input: %s", self._ip_address, message.get("input"))
                 self._yamaha._source = message.get("input")
             if "volume" in message:
                 volume = message.get("volume")
@@ -104,28 +105,30 @@ class Zone(object):
                 else:
                     volume_max = self._yamaha.volume_max
 
-                _LOGGER.debug("Volume: %d / Max: %d", volume, volume_max)
+                _LOGGER.debug(
+                    "%s: Volume: %d / Max: %d", self._ip_address, volume, volume_max
+                )
 
                 self._yamaha.volume = volume / volume_max
                 self._yamaha.volume_max = volume_max
             if "mute" in message:
-                _LOGGER.debug("Mute: %s", message.get("mute"))
+                _LOGGER.debug("%s: Mute: %s", self._ip_address, message.get("mute"))
                 self._yamaha.mute = message.get("mute", False)
         else:
-            _LOGGER.debug("No yamaha-obj found")
+            _LOGGER.debug("%s: No yamaha-obj found", self._ip_address)
 
     def update_status(self, new_status=None):
-        """Updates the zone status."""
-        _LOGGER.debug("update_status: Zone %s", self.zone_id)
+        """Update the zone status."""
+        _LOGGER.debug("%s: update_status: Zone %s", self._ip_address, self.zone_id)
 
         if self.status and new_status is None:
-            _LOGGER.debug("Zone: healthy.")
+            _LOGGER.debug("%s: Zone: healthy.", self._ip_address)
         else:
             old_status = self.status or {}
 
             if new_status:
                 # merge new_status with existing for comparison
-                _LOGGER.debug("Set status: provided")
+                _LOGGER.debug("%s: Set status: provided", self._ip_address)
 
                 # make a copy of the old_status
                 status = old_status.copy()
@@ -136,12 +139,14 @@ class Zone(object):
                 # promote merged_status to new_status
                 new_status = status
             else:
-                _LOGGER.debug("Set status: own")
+                _LOGGER.debug("%s: Set status: own", self._ip_address)
                 new_status = self.get_status()
 
-            _LOGGER.debug("old_status: %s", old_status)
-            _LOGGER.debug("new_status: %s", new_status)
-            _LOGGER.debug("is_equal: %s", old_status == new_status)
+            _LOGGER.debug("%s: old_status: %s", self._ip_address, old_status)
+            _LOGGER.debug("%s: new_status: %s", self._ip_address, new_status)
+            _LOGGER.debug(
+                "%s: is_equal: %s", self._ip_address, old_status == new_status
+            )
 
             if new_status != old_status:
                 self.handle_message(new_status)
@@ -156,13 +161,13 @@ class Zone(object):
         return self._yamaha.update_hass() if self._yamaha else False
 
     def get_status(self):
-        """Get status from device"""
+        """Get status from device."""
         req_url = ENDPOINTS["getStatus"].format(self.ip_address, self.zone_id)
         return request(req_url)
 
     def set_yamaha_device(self, yamaha_device):
-        """Set reference to device in HASS"""
-        _LOGGER.debug("setYamahaDevice: %s", yamaha_device)
+        """Set reference to device in HASS."""
+        _LOGGER.debug("%s: setYamahaDevice: %s", self._ip_address, yamaha_device)
         self._yamaha = yamaha_device
 
     def set_power(self, power):
