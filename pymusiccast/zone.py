@@ -3,12 +3,14 @@
 import logging
 from .const import ENDPOINTS, STATE_ON, STATE_OFF
 from .helpers import request
+
 _LOGGER = logging.getLogger(__name__)
 
 
 class Zone(object):
     """docstring for Zone"""
-    def __init__(self, receiver, zone_id='main'):
+
+    def __init__(self, receiver, zone_id="main"):
         super(Zone, self).__init__()
         self._status = None
         self._zone_id = zone_id
@@ -54,18 +56,19 @@ class Zone(object):
     def handle_message(self, message):
         """Process UDP messages"""
         if self._yamaha:
-            if 'power' in message:
-                _LOGGER.debug("Power: %s", message.get('power'))
+            if "power" in message:
+                _LOGGER.debug("Power: %s", message.get("power"))
                 self._yamaha.power = (
-                    STATE_ON if message.get('power') == "on" else STATE_OFF)
-            if 'input' in message:
-                _LOGGER.debug("Input: %s", message.get('input'))
-                self._yamaha._source = message.get('input')
-            if 'volume' in message:
-                volume = message.get('volume')
+                    STATE_ON if message.get("power") == "on" else STATE_OFF
+                )
+            if "input" in message:
+                _LOGGER.debug("Input: %s", message.get("input"))
+                self._yamaha._source = message.get("input")
+            if "volume" in message:
+                volume = message.get("volume")
 
-                if 'max_volume' in message:
-                    volume_max = message.get('max_volume')
+                if "max_volume" in message:
+                    volume_max = message.get("max_volume")
                 else:
                     volume_max = self._yamaha.volume_max
 
@@ -73,9 +76,9 @@ class Zone(object):
 
                 self._yamaha.volume = volume / volume_max
                 self._yamaha.volume_max = volume_max
-            if 'mute' in message:
-                _LOGGER.debug("Mute: %s", message.get('mute'))
-                self._yamaha.mute = message.get('mute', False)
+            if "mute" in message:
+                _LOGGER.debug("Mute: %s", message.get("mute"))
+                self._yamaha.mute = message.get("mute", False)
         else:
             _LOGGER.debug("No yamaha-obj found")
 

@@ -4,13 +4,14 @@ import json
 import time
 import logging
 import requests
+
 _LOGGER = logging.getLogger(__name__)
 
 
 def request(url, *args, **kwargs):
     """Do the HTTP Request and return data"""
-    method = kwargs.get('method', 'GET')
-    timeout = kwargs.pop('timeout', 10)  # hass default timeout
+    method = kwargs.get("method", "GET")
+    timeout = kwargs.pop("timeout", 10)  # hass default timeout
     req = requests.request(method, url, *args, timeout=timeout, **kwargs)
     data = req.json()
     _LOGGER.debug(json.dumps(data))
@@ -33,8 +34,8 @@ def message_worker(device):
             except ValueError:
                 _LOGGER.error("Received invalid message: %s", message)
 
-            if 'device_id' in data:
-                device_id = data.get('device_id')
+            if "device_id" in data:
+                device_id = data.get("device_id")
                 if device_id == device.device_id:
                     device.handle_event(data)
                 else:
@@ -49,7 +50,7 @@ def socket_worker(sock, msg_q):
     _LOGGER.debug("Starting Socket Thread.")
     while True:
         try:
-            data, addr = sock.recvfrom(1024)    # buffer size is 1024 bytes
+            data, addr = sock.recvfrom(1024)  # buffer size is 1024 bytes
         except OSError as err:
             _LOGGER.error(err)
         else:

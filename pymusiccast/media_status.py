@@ -2,11 +2,13 @@
 """This file defines the MediaStatus object."""
 import logging
 from datetime import datetime
+
 _LOGGER = logging.getLogger(__name__)
 
 
 class MediaStatus(object):
     """docstring for MediaStatus"""
+
     def __init__(self, data, host):
         super(MediaStatus, self).__init__()
         self.received = datetime.utcnow()
@@ -71,15 +73,15 @@ class MediaStatus(object):
         new = new_media_status.__dict__.copy()
 
         # remove play_times before later comparison
-        old_play_time = old.pop('play_time')
-        new_play_time = new.pop('play_time')
+        old_play_time = old.pop("play_time")
+        new_play_time = new.pop("play_time")
 
         diff_play_time = new_play_time - old_play_time
         # _LOGGER.debug("Playtime: %d", diff_play_time)
 
         # remove received datetimes before later comparison
-        old_received = old.pop('received')
-        new_received = new.pop('received')
+        old_received = old.pop("received")
+        new_received = new.pop("received")
 
         # how many seconds have passed between both status updates
         seconds_passed = int((new_received - old_received).total_seconds())

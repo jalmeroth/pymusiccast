@@ -13,9 +13,9 @@ _LOGGER = logging.getLogger(__name__)
 def setup_parser():
     """Setup an ArgumentParser."""
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--port', type=int, default=5005)
-    parser.add_argument('-i', '--interval', type=int, default=480)
-    parser.add_argument('host', type=str, help='hostname')
+    parser.add_argument("-p", "--port", type=int, default=5005)
+    parser.add_argument("-i", "--interval", type=int, default=480)
+    parser.add_argument("host", type=str, help="hostname")
     return parser
 
 
@@ -35,7 +35,7 @@ def main():
         time.sleep(0.2)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         main()
     except (KeyboardInterrupt, SystemExit):

@@ -5,10 +5,7 @@ import socket
 import logging
 import threading
 from requests.exceptions import RequestException
-from .const import (
-    ENDPOINTS,
-    STATE_UNKNOWN, STATE_PLAYING, STATE_PAUSED, STATE_IDLE
-)
+from .const import ENDPOINTS, STATE_UNKNOWN, STATE_PLAYING, STATE_PAUSED, STATE_IDLE
 from .helpers import request, message_worker, socket_worker
 from .media_status import MediaStatus
 from .exceptions import YMCInitError
@@ -19,6 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class McDevice(object):
     """docstring for McDevice"""
+
     def __init__(self, ip_address, udp_port=5005, **kwargs):
         super(McDevice, self).__init__()
         _LOGGER.debug("McDevice: %s", ip_address)
@@ -26,7 +24,7 @@ class McDevice(object):
         self.messages = queue.Queue()
         self._ip_address = ip_address
         self._udp_port = udp_port
-        self._interval = kwargs.get('mc_interval', 480)
+        self._interval = kwargs.get("mc_interval", 480)
         self._zones = {}
         self._yamaha = None
         self._socket = None
@@ -84,12 +82,12 @@ class McDevice(object):
     def initialize(self):
         """initialize the object"""
         self.network_status = self.get_network_status()
-        self.name = self.network_status.get('network_name', 'Unknown')
+        self.name = self.network_status.get("network_name", "Unknown")
         self.location_info = self.get_location_info()
         self.device_info = self.get_device_info()
         self.device_id = (
-            self.device_info.get('device_id')
-            if self.device_info else "Unknown")
+            self.device_info.get("device_id") if self.device_info else "Unknown"
+        )
         self.initialize_socket()
         self.initialize_worker()
         self.initialize_zones()
@@ -99,35 +97,37 @@ class McDevice(object):
         try:
             _LOGGER.debug("Trying to open socket.")
             self._socket = socket.socket(
-                socket.AF_INET,     # IPv4
-                socket.SOCK_DGRAM   # UDP
+                socket.AF_INET, socket.SOCK_DGRAM  # IPv4  # UDP
             )
-            self._socket.bind(('', self._udp_port))
+            self._socket.bind(("", self._udp_port))
         except socket.error as err:
             raise err
         else:
             _LOGGER.debug("Socket open.")
             socket_thread = threading.Thread(
-                name="SocketThread", target=socket_worker,
-                args=(self._socket, self.messages,))
+                name="SocketThread",
+                target=socket_worker,
+                args=(self._socket, self.messages),
+            )
             socket_thread.setDaemon(True)
             socket_thread.start()
 
     def initialize_worker(self):
         """initialize the worker thread"""
         worker_thread = threading.Thread(
-            name="WorkerThread", target=message_worker, args=(self,))
+            name="WorkerThread", target=message_worker, args=(self,)
+        )
         worker_thread.setDaemon(True)
         worker_thread.start()
 
     def initialize_zones(self):
         """initialize receiver zones"""
-        zone_list = self.location_info.get('zone_list', {'main': True})
+        zone_list = self.location_info.get("zone_list", {"main": True})
 
         for zone_id in zone_list:
             if zone_list[zone_id]:  # Location setup is valid
                 self.zones[zone_id] = Zone(self, zone_id=zone_id)
-            else:                   # Location setup is not valid
+            else:  # Location setup is not valid
                 _LOGGER.debug("Ignoring zone: %s", zone_id)
 
     def get_device_info(self):
@@ -154,9 +154,9 @@ class McDevice(object):
         """Get status from device to register/keep alive UDP"""
         headers = {
             "X-AppName": "MusicCast/0.1(python)",
-            "X-AppPort": str(self._udp_port)
+            "X-AppPort": str(self._udp_port),
         }
-        req_url = ENDPOINTS["getStatus"].format(self.ip_address, 'main')
+        req_url = ENDPOINTS["getStatus"].format(self.ip_address, "main")
         return request(req_url, headers=headers)
 
     def handle_status(self):
@@ -165,7 +165,7 @@ class McDevice(object):
 
         if status:
             # Update main-zone
-            self.zones['main'].update_status(status)
+            self.zones["main"].update_status(status)
 
     def handle_netusb(self, message):
         """Handles 'netusb' in message"""
@@ -173,7 +173,7 @@ class McDevice(object):
         needs_update = 0
 
         if self._yamaha:
-            if 'play_info_updated' in message:
+            if "play_info_updated" in message:
                 play_info = self.get_play_info()
                 # _LOGGER.debug(play_info)
                 if play_info:
@@ -184,7 +184,7 @@ class McDevice(object):
                         self._yamaha.new_media_status(new_media_status)
                         needs_update += 1
 
-                    playback = play_info.get('playback')
+                    playback = play_info.get("playback")
                     # _LOGGER.debug("Playback: {}".format(playback))
                     if playback == "play":
                         new_status = STATE_PLAYING
@@ -207,12 +207,12 @@ class McDevice(object):
 
         self.device_features = device_features
 
-        if device_features and 'zone' in device_features:
-            for zone in device_features['zone']:
-                zone_id = zone.get('id')
+        if device_features and "zone" in device_features:
+            for zone in device_features["zone"]:
+                zone_id = zone.get("id")
                 if zone_id in self.zones:
                     _LOGGER.debug("handle_features: %s", zone_id)
-                    input_list = zone.get('input_list', [])
+                    input_list = zone.get("input_list", [])
                     input_list.sort()
                     self.zones[zone_id].source_list = input_list
 
@@ -225,8 +225,8 @@ class McDevice(object):
                 _LOGGER.debug("Received message for zone: %s", zone)
                 self.zones[zone].update_status(message[zone])
 
-        if 'netusb' in message:
-            needs_update += self.handle_netusb(message['netusb'])
+        if "netusb" in message:
+            needs_update += self.handle_netusb(message["netusb"])
 
         if needs_update > 0:
             _LOGGER.debug("needs_update: %d", needs_update)
@@ -255,7 +255,8 @@ class McDevice(object):
         """Schedule a Timer Thread."""
         _LOGGER.debug("Timer: firing again in %d seconds", self._interval)
         self.update_status_timer = threading.Timer(
-            self._interval, self.update_status, [True])
+            self._interval, self.update_status, [True]
+        )
         self.update_status_timer.setDaemon(True)
         self.update_status_timer.start()
 
