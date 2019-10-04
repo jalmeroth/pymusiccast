@@ -1,14 +1,17 @@
 """"This library brings support for \
 Yamaha MusicCast devices to Home Assistant."""
+import logging
 import queue
 import socket
-import logging
 import threading
+
 from requests.exceptions import RequestException
-from .const import ENDPOINTS, STATE_UNKNOWN, STATE_PLAYING, STATE_PAUSED, STATE_IDLE
-from .helpers import request, message_worker, socket_worker
-from .media_status import MediaStatus
+
+from .const import (ENDPOINTS, STATE_IDLE, STATE_PAUSED, STATE_PLAYING,
+                    STATE_UNKNOWN)
 from .exceptions import YMCInitError
+from .helpers import message_worker, request, socket_worker
+from .media_status import MediaStatus
 from .zone import Zone
 
 _LOGGER = logging.getLogger(__name__)

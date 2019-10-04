@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """This is a docstring."""
 import logging
-from .const import ENDPOINTS, STATE_ON, STATE_OFF
+
+from .const import ENDPOINTS, STATE_OFF, STATE_ON
 from .helpers import request
 
 _LOGGER = logging.getLogger(__name__)

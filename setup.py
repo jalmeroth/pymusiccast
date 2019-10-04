@@ -9,7 +9,7 @@ import os
 import sys
 from shutil import rmtree
 
-from setuptools import setup, Command
+from setuptools import Command, setup
 
 # Package meta-data.
 NAME = "pymusiccast"

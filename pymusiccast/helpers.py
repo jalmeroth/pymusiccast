@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 """This file holds helper functions."""
 import json
-import time
 import logging
+import time
+
 import requests
 
 _LOGGER = logging.getLogger(__name__)

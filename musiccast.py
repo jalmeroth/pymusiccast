@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 """Demo pymusiccast."""
-import time
-import socket
-import logging
 import argparse
+import logging
+import socket
+import time
+
 from pymusiccast import McDevice
 
 logging.basicConfig(level=logging.DEBUG)
