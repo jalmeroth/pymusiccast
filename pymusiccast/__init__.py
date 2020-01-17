@@ -73,14 +73,12 @@ class McDevice(object):
     def healthy_update_timer(self):
         """Check state of update timer."""
         state = None
-
         if self.update_status_timer and self.update_status_timer.is_alive():
             _LOGGER.debug("%s: Timer: healthy", self._ip_address)
             state = True
         else:
             _LOGGER.debug("%s: Timer: not healthy", self._ip_address)
             state = False
-
         return state
 
     def initialize(self):
@@ -176,14 +174,12 @@ class McDevice(object):
         """Handle 'netusb' in message."""
         # _LOGGER.debug("message: {}".format(message))
         needs_update = 0
-
         if self._yamaha:
             if "play_info_updated" in message:
                 play_info = self.get_play_info()
                 # _LOGGER.debug(play_info)
                 if play_info:
                     new_media_status = MediaStatus(play_info, self._ip_address)
-
                     if self._yamaha.media_status != new_media_status:
                         # we need to send an update upwards
                         self._yamaha.new_media_status(new_media_status)
@@ -199,12 +195,10 @@ class McDevice(object):
                         new_status = STATE_PAUSED
                     else:
                         new_status = STATE_UNKNOWN
-
                     if self._yamaha.status is not new_status:
                         _LOGGER.debug("%s: playback: %s", self._ip_address, new_status)
                         self._yamaha.status = new_status
                         needs_update += 1
-
         return needs_update
 
     def handle_features(self, device_features):
@@ -219,6 +213,9 @@ class McDevice(object):
                     input_list = zone.get("input_list", [])
                     input_list.sort()
                     self.zones[zone_id].source_list = input_list
+                    sound_program_list = zone.get('sound_program_list', [])
+                    sound_program_list.sort()
+                    self.zones[zone_id].sound_mode_list = sound_program_list
 
     def handle_event(self, message):
         """Dispatch all event messages."""
