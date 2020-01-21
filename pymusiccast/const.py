@@ -21,8 +21,9 @@ ENDPOINTS = {
     "setVolume": "http://{}/YamahaExtendedControl/v1/{}/setVolume",
     "startDistribution": "http://{}/YamahaExtendedControl/v1/dist/startDistribution",
     "stopDistribution": "http://{}/YamahaExtendedControl/v1/dist/stopDistribution",
-    "getSoundPrograms": ("http://{}/YamahaExtendedControl"
-                         "/v1/{}/getSoundProgramList"),
+    "getSoundPrograms": (
+        "http://{}/YamahaExtendedControl" "/v1/{}/getSoundProgramList"
+    ),
     "setSoundProgram": "http://{}/YamahaExtendedControl/v1/{}/setSoundProgram",
 }
 

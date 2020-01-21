@@ -213,7 +213,7 @@ class McDevice(object):
                     input_list = zone.get("input_list", [])
                     input_list.sort()
                     self.zones[zone_id].source_list = input_list
-                    sound_program_list = zone.get('sound_program_list', [])
+                    sound_program_list = zone.get("sound_program_list", [])
                     sound_program_list.sort()
                     self.zones[zone_id].sound_mode_list = sound_program_list
 

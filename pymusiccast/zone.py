@@ -97,8 +97,12 @@ class Zone(object):
             if "input" in message:
                 _LOGGER.debug("%s: Input: %s", self._ip_address, message.get("input"))
                 self._yamaha._source = message.get("input")
-            if 'sound_program' in message:
-                _LOGGER.debug("%s: Sound Program: %s", self._ip_address, message.get("sound_program"))
+            if "sound_program" in message:
+                _LOGGER.debug(
+                    "%s: Sound Program: %s",
+                    self._ip_address,
+                    message.get("sound_program"),
+                )
                 self._yamaha._sound_mode = message.get("sound_program")
             if "volume" in message:
                 volume = message.get("volume")
@@ -206,7 +210,7 @@ class Zone(object):
         group_members = new_dist.get("group_members")
         self._yamaha.group_members = group_members
         self._status_sent = self.update_hass()
-        
+
     @property
     def sound_mode_list(self):
         """Return sound_mode_list."""
@@ -219,7 +223,8 @@ class Zone(object):
 
     def set_sound_program(self, sound_program):
         """Send sound program command."""
-        req_url = ENDPOINTS["setSoundProgram"].format(self.ip_address,
-                                                      self.zone_id, sound_program)
+        req_url = ENDPOINTS["setSoundProgram"].format(
+            self.ip_address, self.zone_id, sound_program
+        )
         params = {"program": sound_program}
         return request(req_url, params=params)
