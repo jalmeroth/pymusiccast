@@ -97,13 +97,6 @@ class Zone(object):
             if "input" in message:
                 _LOGGER.debug("%s: Input: %s", self._ip_address, message.get("input"))
                 self._yamaha._source = message.get("input")
-            if "sound_program" in message:
-                _LOGGER.debug(
-                    "%s: Sound Program: %s",
-                    self._ip_address,
-                    message.get("sound_program"),
-                )
-                self._yamaha._sound_mode = message.get("sound_program")
             if "volume" in message:
                 volume = message.get("volume")
 
@@ -226,5 +219,6 @@ class Zone(object):
         req_url = ENDPOINTS["setSoundProgram"].format(
             self.ip_address, self.zone_id, sound_program
         )
+        self._yamaha._sound_mode=sound_program
         params = {"program": sound_program}
         return request(req_url, params=params)
