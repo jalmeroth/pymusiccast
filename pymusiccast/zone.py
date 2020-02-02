@@ -203,3 +203,22 @@ class Zone(object):
         group_members = new_dist.get("group_members")
         self._yamaha.group_members = group_members
         self._status_sent = self.update_hass()
+
+    @property
+    def sound_mode_list(self):
+        """Return sound_mode_list."""
+        return self._yamaha.sound_mode_list
+
+    @sound_mode_list.setter
+    def sound_mode_list(self, sound_mode_list):
+        """Sets sound_mode_list."""
+        self._yamaha.sound_mode_list = sound_mode_list
+
+    def set_sound_program(self, sound_program):
+        """Send sound program command."""
+        req_url = ENDPOINTS["setSoundProgram"].format(
+            self.ip_address, self.zone_id, sound_program
+        )
+        self._yamaha._sound_mode = sound_program
+        params = {"program": sound_program}
+        return request(req_url, params=params)
