@@ -219,6 +219,6 @@ class Zone(object):
         req_url = ENDPOINTS["setSoundProgram"].format(
             self.ip_address, self.zone_id, sound_program
         )
-        self._yamaha._sound_mode=sound_program
+        self._yamaha._sound_mode = sound_program
         params = {"program": sound_program}
         return request(req_url, params=params)
